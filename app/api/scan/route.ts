@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import { createClient } from '@/lib/supabase/server';
-import { extract } from '@/lib/engine';
+import { extractWithEscalation } from '@/lib/engine';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
 
   let result;
   try {
-    result = await extract(imageBase64, { provider: 'openai', mimeType });
+    result = await extractWithEscalation(imageBase64, { mimeType });
   } catch (err) {
     await supabase.from('documents').insert({
       id: docId,
