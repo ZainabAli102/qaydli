@@ -209,7 +209,7 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
         <div>
           <Label>
             {t('review.category')}
-            {initial.fromMemory && <span className="ml-2 text-xs text-brand">★</span>}
+            {initial.fromMemory && <span className="ms-2 text-xs text-brand">★</span>}
           </Label>
           <select className={inputCls} value={category} onChange={(e) => setCategory(e.target.value as Category)}>
             {CATEGORIES.map((c) => (
