@@ -29,6 +29,7 @@ export async function extract(
     signal: opts.signal,
     systemPrompt: SYSTEM_PROMPT,
     userPrompt: buildUserPrompt(opts.now ?? new Date()),
+    captureUsage: opts.captureUsage,
   });
 
   return opts.runChecks === false ? result : runChecks(result);

@@ -67,6 +67,13 @@ export interface ReceiptResult {
 
 export type ProviderName = 'openai' | 'anthropic';
 
+/** Token usage reported by a provider for one extraction call. */
+export interface Usage {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+}
+
 /** What an adapter receives. The prompt is built by the engine, not the adapter. */
 export interface AdapterInput {
   imageBase64: string;
@@ -76,6 +83,8 @@ export interface AdapterInput {
   signal?: AbortSignal;
   systemPrompt: string;
   userPrompt: string;
+  /** Optional hook the adapter calls with token usage for one request. */
+  captureUsage?: (usage: Usage) => void;
 }
 
 /** The boundary between the pure engine and a vision model. */
@@ -95,6 +104,8 @@ export interface ExtractOptions {
   signal?: AbortSignal;
   /** Reference "today" the prompt uses to resolve years/missing dates. Default: now. */
   now?: Date;
+  /** Optional hook called with token usage for the underlying model request. */
+  captureUsage?: (usage: Usage) => void;
   /** Run the in-code maths checker after extraction. Default: true. */
   runChecks?: boolean;
 }

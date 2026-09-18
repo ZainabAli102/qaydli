@@ -24,7 +24,9 @@ export function createOpenAIAdapter(): ProviderAdapter {
       if (!apiKey) throw new Error('OPENAI_API_KEY is not set');
 
       const client = new OpenAI({ apiKey });
-      const model = input.model ?? process.env.OPENAI_VISION_MODEL ?? 'gpt-4o';
+      const model = input.model ?? process.env.OPENAI_MODEL ?? 'gpt-4o';
+      // The GPT-5 / o-series reasoning models reject a custom temperature.
+      const isReasoning = /^(o\d|gpt-5)/.test(model);
 
       // Down-scale to a 2048px long side (and EXIF-orient) before upload.
       const img = await resizeForVision(input.imageBase64, input.mimeType, 2048);
@@ -33,7 +35,7 @@ export function createOpenAIAdapter(): ProviderAdapter {
       const res = await client.chat.completions.create(
         {
           model,
-          temperature: 0,
+          ...(isReasoning ? {} : { temperature: 0 }),
           response_format: { type: 'json_object' },
           messages: [
             { role: 'system', content: input.systemPrompt },
@@ -48,6 +50,14 @@ export function createOpenAIAdapter(): ProviderAdapter {
         },
         { signal: input.signal }
       );
+
+      if (res.usage) {
+        input.captureUsage?.({
+          prompt_tokens: res.usage.prompt_tokens ?? 0,
+          completion_tokens: res.usage.completion_tokens ?? 0,
+          total_tokens: res.usage.total_tokens ?? 0,
+        });
+      }
 
       const text = res.choices[0]?.message?.content ?? '{}';
       return parseReceiptResult(JSON.parse(extractJson(text)));
