@@ -45,8 +45,10 @@ components/             LocaleProvider, LanguageSwitcher, ScanClient, Onboarding
 lib/
   i18n.ts               en (default), ar, ckb dictionaries + dir()
   session.ts            getSessionContext() — user + business on the server
-  supabase/             browser client, server client, service client, middleware
+  supabase/             browser client, server client, service client
   engine/               THE PURE ENGINE (see below)
+middleware.ts           Edge session refresh + route guard (fail-soft, @supabase/ssr only)
+app/api/health/route.ts Reports which required env var names are set (no secrets)
 supabase/migrations/    0001_init.sql (schema + RLS), 0002_storage.sql (bucket)
 tests/                  run-engine.ts harness + receipts/expected.json
 public/                 manifest.webmanifest, sw.js
