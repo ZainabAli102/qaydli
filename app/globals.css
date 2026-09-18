@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand: #0f766e;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  background: #f8fafc;
+  color: #0f172a;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Logical properties so layout mirrors automatically under dir="rtl". */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, 'Segoe UI', Tahoma, Arial, sans-serif;
+  min-height: 100dvh;
+}
+
+/* Comfortable tap targets on phones. */
+button,
+input,
+select {
+  font: inherit;
+}
