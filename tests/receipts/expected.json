@@ -1,0 +1,86 @@
+{
+  "//": "Expected extractions for the phase-0 receipt set. Add the images with the",
+  "//2": "same file names into this folder, then run: npm run test:engine.",
+  "//3": "Only the fields present in each 'expected' block are scored. A date given",
+  "//4": "as an array passes if the reading matches any listed value.",
+  "cases": [
+    {
+      "image": "taj.jpg",
+      "human": "Taj Curtains, handwritten invoice, IQD 850,000.",
+      "expected": {
+        "document_type": "invoice",
+        "vendor": "Taj Curtains",
+        "date": "2026-07-27",
+        "currency": "IQD",
+        "total": 850000
+      }
+    },
+    {
+      "image": "pharmacy.jpg",
+      "human": "Pharmacy One Al-Naseem, 7 items, price column is the unit price; first item 0.5 x 36,500 = 18,250.",
+      "expected": {
+        "vendor": "Pharmacy One Al-Naseem",
+        "date": "2026-08-31",
+        "currency": "IQD",
+        "total": 105250,
+        "line_items_count": 7,
+        "first_line_item": { "qty": 0.5, "unit_price": 36500, "line_total": 18250 }
+      }
+    },
+    {
+      "image": "bellona.jpg",
+      "human": "Bellona Furniture Center, voucher no. 01135, USD 1,000, date 15/8 (year missing), photo rotated 90 degrees.",
+      "expected": {
+        "document_type": "voucher",
+        "vendor": "Bellona Furniture Center",
+        "invoice_number": "01135",
+        "date": "2026-08-15",
+        "currency": "USD",
+        "total": 1000,
+        "flags": ["date_year_missing"]
+      }
+    },
+    {
+      "image": "homecenter.jpg",
+      "human": "Home Center Alhasani, INV/2026/084298, IQD 36,000, paid in full, remaining 0.",
+      "expected": {
+        "document_type": "invoice",
+        "vendor": "Home Center Alhasani",
+        "invoice_number": "INV/2026/084298",
+        "date": "2026-07-28",
+        "currency": "IQD",
+        "total": 36000,
+        "paid_amount": 36000,
+        "remaining": 0
+      }
+    },
+    {
+      "image": "adham.jpg",
+      "human": "Adham Home Furniture, payment receipt PCSH10/2026/00310, USD 800, note 'paid in full'.",
+      "expected": {
+        "document_type": "payment_receipt",
+        "vendor": "Adham Home Furniture",
+        "invoice_number": "PCSH10/2026/00310",
+        "date": "2026-07-18",
+        "currency": "USD",
+        "total": 800,
+        "paid_amount": 800,
+        "remaining": 0
+      }
+    },
+    {
+      "image": "mvk.jpg",
+      "human": "MVK Electric, no. 04390, USD 10 total with 15,000 IQD paid; date uncertain (8 or 18 Mar 2026); item name unclear; expect a conflict flag.",
+      "expected": {
+        "vendor": "MVK Electric",
+        "invoice_number": "04390",
+        "currency": "mixed",
+        "total": 10,
+        "paid_amount": 15000,
+        "paid_currency": "IQD",
+        "date": ["2026-03-08", "2026-03-18"],
+        "flags": ["currency_conflict"]
+      }
+    }
+  ]
+}
