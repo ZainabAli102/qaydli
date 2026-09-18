@@ -9,7 +9,6 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 export function OnboardingForm() {
   const { t } = useLocale();
   const router = useRouter();
-  const supabase = createClient();
 
   const [name, setName] = useState('');
   const [city, setCity] = useState('');
@@ -23,6 +22,7 @@ export function OnboardingForm() {
     setBusy(true);
     setError(null);
     try {
+      const supabase = createClient();
       const { error } = await supabase.rpc('onboard_business', {
         p_name: name,
         p_city: city,

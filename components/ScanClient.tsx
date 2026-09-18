@@ -48,7 +48,8 @@ export function ScanClient({ businessName }: { businessName: string }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
-      setResult(data);
+      // The route returns { document_id, storage_path, result }.
+      setResult(data?.result ?? data);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {

@@ -11,7 +11,6 @@ type Method = 'email' | 'phone';
 export default function LoginPage() {
   const { t } = useLocale();
   const router = useRouter();
-  const supabase = createClient();
 
   const [method, setMethod] = useState<Method>('email');
   const [isSignUp, setIsSignUp] = useState(false);
@@ -28,6 +27,7 @@ export default function LoginPage() {
     setBusy(true);
     setError(null);
     try {
+      const supabase = createClient();
       const fn = isSignUp
         ? supabase.auth.signUp({ email, password })
         : supabase.auth.signInWithPassword({ email, password });
@@ -47,6 +47,7 @@ export default function LoginPage() {
     setBusy(true);
     setError(null);
     try {
+      const supabase = createClient();
       const { error } = await supabase.auth.signInWithOtp({ phone });
       if (error) throw error;
       setCodeSent(true);
@@ -62,6 +63,7 @@ export default function LoginPage() {
     setBusy(true);
     setError(null);
     try {
+      const supabase = createClient();
       const { error } = await supabase.auth.verifyOtp({ phone, token: code, type: 'sms' });
       if (error) throw error;
       router.replace('/scan');
