@@ -7,11 +7,13 @@
 import type { ExtractOptions, ReceiptResult } from './types';
 import { getAdapter } from './providers';
 import { SYSTEM_PROMPT, USER_PROMPT } from './prompt';
+import { runChecks } from './checker';
 
 export * from './types';
 export { parseReceiptResult, normalizeDigits, toNumber } from './schema';
 export { getAdapter, createOpenAIAdapter, createAnthropicAdapter } from './providers';
 export { SYSTEM_PROMPT, USER_PROMPT } from './prompt';
+export { runChecks, wordsToNumberEn } from './checker';
 
 export async function extract(
   imageBase64: string,
@@ -29,5 +31,5 @@ export async function extract(
     userPrompt: USER_PROMPT,
   });
 
-  return result;
+  return opts.runChecks === false ? result : runChecks(result);
 }
