@@ -52,11 +52,14 @@ export function createOpenAIAdapter(): ProviderAdapter {
       );
 
       if (res.usage) {
-        input.captureUsage?.({
-          prompt_tokens: res.usage.prompt_tokens ?? 0,
-          completion_tokens: res.usage.completion_tokens ?? 0,
-          total_tokens: res.usage.total_tokens ?? 0,
-        });
+        input.captureUsage?.(
+          {
+            prompt_tokens: res.usage.prompt_tokens ?? 0,
+            completion_tokens: res.usage.completion_tokens ?? 0,
+            total_tokens: res.usage.total_tokens ?? 0,
+          },
+          model
+        );
       }
 
       const text = res.choices[0]?.message?.content ?? '{}';

@@ -139,6 +139,7 @@ export function parseReceiptResult(input: unknown): ReceiptResult {
     vendor_latin: confident(o.vendor_latin, asString),
     vendor_phone: confident(o.vendor_phone, asString),
     invoice_number: confident(o.invoice_number, asString),
+    date_raw: confident(o.date_raw, asString), // keep original digits/script
     date: confident(o.date, asIsoDate),
     currency: confident(o.currency, asCurrency, 0.6),
     line_items: normalizeLineItems(o.line_items),
@@ -152,5 +153,6 @@ export function parseReceiptResult(input: unknown): ReceiptResult {
     language: confident(o.language, asString),
     notes: confident(o.notes, asString),
     flags: normalizeFlags(o.flags),
+    model_used: null, // set by the engine, not the model
   };
 }

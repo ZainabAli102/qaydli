@@ -50,7 +50,9 @@ export interface ReceiptResult {
   vendor_latin: Confident<string | null>;
   vendor_phone: Confident<string | null>;
   invoice_number: Confident<string | null>;
-  date: Confident<string | null>; // ISO 8601 (YYYY-MM-DD) or null
+  /** The date exactly as written on the document (digits/script preserved). */
+  date_raw: Confident<string | null>;
+  date: Confident<string | null>; // ISO 8601 (YYYY-MM-DD), parsed in code from date_raw
   currency: Confident<Currency>;
   line_items: LineItem[];
   subtotal: Confident<number | null>;
@@ -63,6 +65,8 @@ export interface ReceiptResult {
   language: Confident<string | null>;
   notes: Confident<string | null>;
   flags: Flag[];
+  /** Which model produced this result (set by the engine, not the model). */
+  model_used: string | null;
 }
 
 export type ProviderName = 'openai' | 'anthropic';
@@ -83,8 +87,8 @@ export interface AdapterInput {
   signal?: AbortSignal;
   systemPrompt: string;
   userPrompt: string;
-  /** Optional hook the adapter calls with token usage for one request. */
-  captureUsage?: (usage: Usage) => void;
+  /** Optional hook the adapter calls with token usage (and the model) per request. */
+  captureUsage?: (usage: Usage, model: string) => void;
 }
 
 /** The boundary between the pure engine and a vision model. */
@@ -104,8 +108,16 @@ export interface ExtractOptions {
   signal?: AbortSignal;
   /** Reference "today" the prompt uses to resolve years/missing dates. Default: now. */
   now?: Date;
-  /** Optional hook called with token usage for the underlying model request. */
-  captureUsage?: (usage: Usage) => void;
+  /** Optional hook called with token usage (and model) for each model request. */
+  captureUsage?: (usage: Usage, model: string) => void;
   /** Run the in-code maths checker after extraction. Default: true. */
   runChecks?: boolean;
+}
+
+/** Options for the two-tier escalation extractor. */
+export interface EscalationOptions extends ExtractOptions {
+  /** Cheaper first-pass model. Default: 'gpt-4o'. */
+  primaryModel?: string;
+  /** Stronger model used when the first pass looks shaky. Default: 'gpt-5.6-sol'. */
+  secondaryModel?: string;
 }

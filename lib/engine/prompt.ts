@@ -8,6 +8,7 @@ export const OUTPUT_SHAPE = `{
   "vendor_latin":  { "value": "string|null", "confidence": 0-1 },
   "vendor_phone":  { "value": "string|null", "confidence": 0-1 },
   "invoice_number":{ "value": "string|null", "confidence": 0-1 },
+  "date_raw":      { "value": "string|null", "confidence": 0-1 },
   "date":          { "value": "YYYY-MM-DD|null", "confidence": 0-1 },
   "currency":      { "value": "IQD|USD|mixed", "confidence": 0-1 },
   "line_items": [
@@ -40,7 +41,7 @@ Reading rules:
 - Reference numbers: copy invoice / voucher / order / reference numbers CHARACTER BY CHARACTER, preserving every digit and separator (e.g. "INV/2026/084298" — do not drop the final digit).
 - Amounts in words: if the total (or any amount) is ALSO written in words (Arabic/Kurdish/English), the WORDS ARE AUTHORITATIVE — set "total" from the words. If the words and the digits disagree, still use the words for total, keep the digit reading in "notes", and add a flag { "code": "amount_in_words_mismatch", ... } describing both.
 - "Paid in full" / "واصل" / "واصل كامل" / "تسدید" style notes: set paid_amount = total and remaining = 0, and record the note text in notes.
-- Dates: output ISO YYYY-MM-DD. Day/month order in the region is usually DD/MM. Read the day and month FROM THE DOCUMENT. Use the current date given in the request ONLY to resolve the YEAR — never copy today's month or day. If the printed year is 2-digit, expand it against the current year. If the year is missing entirely, use the current year and add a flag { "code": "date_year_missing" }. If you cannot read the day and month, set date to null and add { "code": "date_uncertain" } — do NOT substitute today's date. If the date is ambiguous (e.g. the 8th vs 18th, or 3rd vs 8th month), pick the more likely reading, lower confidence, and add { "code": "date_uncertain" }.
+- Dates: FIRST fill "date_raw" with the date string EXACTLY as written on the document — same digits (keep Arabic-Indic ٠-٩ / Persian ۰-۹ as-is), same separators, same order, no reformatting, no added year (e.g. "١٥/٨" or "18/8/2026"). Then ALSO fill "date" with your best ISO YYYY-MM-DD reading (day/month order in the region is usually DD/MM; the current date in the request resolves only a missing/2-digit YEAR, never today's month or day). Code re-parses the authoritative date from date_raw, so date_raw must be faithful. If you cannot read the date at all, set both to null.
 - Document type: "voucher" is a slip headed سەند / وصل / "voucher" carrying a voucher number (common for furniture stores). "payment_receipt" is specifically a receipt confirming a payment (headed "Payment Receipt" / "وصل قبض" against an invoice). "invoice" (فاتورة/پسووڵە) itemises goods with a total. "receipt" is a point-of-sale till slip. Choose the closest; use "unknown" only if truly unclear.
 - Line items: capture description, qty, and unit_price exactly as printed. A quantity may be fractional (e.g. 0.5 kg). For line_total: if the row has an explicit line-total/amount column, use it; if the row shows only a unit price and a quantity, set line_total = unit_price × qty.
 - vendor: the business/shop name as printed. vendor_latin: the same name transliterated to Latin script (English spelling); if the name is already Latin, repeat it; null if you cannot read it.

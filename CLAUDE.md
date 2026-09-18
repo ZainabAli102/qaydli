@@ -90,10 +90,24 @@ returned **as written**, in the currency named by `currency` (conversion to IQD
 is downstream, not the engine's job).
 
 `document_type` (invoice | receipt | payment_receipt | voucher | unknown),
-`vendor`, `vendor_phone`, `invoice_number`, `date` (ISO), `currency`
+`vendor`, `vendor_latin` (Latin transliteration), `vendor_phone`,
+`invoice_number`, `date_raw` (as written, digits/script preserved), `date`
+(ISO, **parsed in code** from `date_raw` — see below), `currency`
 (IQD | USD | mixed), `line_items[]` (`description`, `qty`, `unit_price`,
 `line_total`), `subtotal`, `discount`, `total`, `paid_amount`, `paid_currency`,
-`remaining`, `payment_method`, `language`, `notes`, `flags[]`.
+`remaining`, `payment_method`, `language`, `notes`, `flags[]`, and `model_used`
+(which model produced the result — engine-set, not from the model).
+
+**Dates are parsed in code** (`lib/engine/date.ts`), not trusted to the model:
+the model copies the date verbatim into `date_raw`, and `applyDateFromRaw`
+derives ISO `date` from it (DD/MM order; a missing year is filled from
+`opts.now` and flagged `date_year_missing`).
+
+**Model escalation** (`extractWithEscalation`): run the primary model
+(`gpt-4o`) first; if it raises any warn/error flag or any populated money field
+has confidence < 0.8, re-run with the secondary model (`gpt-5.6-sol`) and take
+that. The vision model is also selectable via `OPENAI_MODEL` (default `gpt-4o`);
+GPT-5/o-series reasoning models run without a custom temperature.
 
 The prompt is built to handle: Arabic-Indic digits, handwritten Kurdish/Arabic,
 struck-through currency headers, crossed-out lines (ignored), amounts in words,

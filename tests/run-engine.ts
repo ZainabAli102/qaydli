@@ -14,8 +14,8 @@
 
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, extname } from 'node:path';
-import { extract } from '../lib/engine';
-import type { ReceiptResult } from '../lib/engine/types';
+import { extract, extractWithEscalation } from '../lib/engine';
+import type { ReceiptResult, Usage } from '../lib/engine/types';
 
 const DIR = join(process.cwd(), 'tests', 'receipts');
 const MIME: Record<string, string> = {
@@ -180,13 +180,13 @@ async function main() {
 
   const RUNS = Math.max(1, Number(process.env.RUNS ?? 3));
   const MODEL = process.env.OPENAI_MODEL ?? 'gpt-4o';
-  const price =
-    process.env.OPENAI_PRICE_IN && process.env.OPENAI_PRICE_OUT
-      ? { in: Number(process.env.OPENAI_PRICE_IN), out: Number(process.env.OPENAI_PRICE_OUT) }
-      : PRICING[MODEL];
+  const ESCALATE = ['1', 'true', 'yes'].includes(String(process.env.ESCALATE ?? '').toLowerCase());
+  const PRIMARY = process.env.PRIMARY_MODEL ?? 'gpt-4o';
+  const SECONDARY = process.env.SECONDARY_MODEL ?? 'gpt-5.6-sol';
+  const label = ESCALATE ? `escalation ${PRIMARY} → ${SECONDARY}` : MODEL;
 
   console.log(
-    `\nQaydli engine test — model ${MODEL}, ${RUNS} run(s)/receipt, ` +
+    `\nQaydli engine test — ${label}, ${RUNS} run(s)/receipt, ` +
       `${present.length}/${cases.length} images present.`
   );
   if (imagesOnDisk.length === 0) {
@@ -208,9 +208,17 @@ async function main() {
     perField.set(key, t);
   };
 
-  let sumIn = 0;
-  let sumOut = 0;
-  let calls = 0;
+  // Token usage per model (escalation touches two models with different prices).
+  const usageByModel = new Map<string, { in: number; out: number; calls: number }>();
+  const captureUsage = (u: Usage, model: string) => {
+    const e = usageByModel.get(model) ?? { in: 0, out: 0, calls: 0 };
+    e.in += u.prompt_tokens;
+    e.out += u.completion_tokens;
+    e.calls += 1;
+    usageByModel.set(model, e);
+  };
+  let extractions = 0; // receipt-runs
+  let escalated = 0; // receipt-runs that fell through to the secondary model
 
   for (const c of present) {
     const bytes = readFileSync(join(DIR, c.image));
@@ -222,17 +230,17 @@ async function main() {
     const runs: ReceiptResult[] = [];
     for (let i = 0; i < RUNS; i++) {
       try {
-        const r = await extract(base64, {
-          provider: 'openai',
-          model: MODEL,
-          mimeType,
-          captureUsage: (u) => {
-            sumIn += u.prompt_tokens;
-            sumOut += u.completion_tokens;
-            calls += 1;
-          },
-        });
+        const r = ESCALATE
+          ? await extractWithEscalation(base64, {
+              mimeType,
+              primaryModel: PRIMARY,
+              secondaryModel: SECONDARY,
+              captureUsage,
+            })
+          : await extract(base64, { provider: 'openai', model: MODEL, mimeType, captureUsage });
         runs.push(r);
+        extractions += 1;
+        if (ESCALATE && r.model_used === SECONDARY) escalated += 1;
       } catch (err) {
         process.stdout.write(`ERROR: ${err instanceof Error ? err.message : String(err)} `);
       }
@@ -256,14 +264,15 @@ async function main() {
       const stable = canons.every((v) => v === canons[0]);
       bump(chk.key, correctCount, runs.length, stable);
     }
+    const modelTag = ESCALATE ? ` [${runs.map((r) => r.model_used).join(',')}]` : '';
     console.log(
-      `runs ${perRunCorrect.map((n) => `${n}/${checks.length}`).join(' ')}`
+      `runs ${perRunCorrect.map((n) => `${n}/${checks.length}`).join(' ')}${modelTag}`
     );
   }
 
   // ---- accuracy + stability table -----------------------------------------
   const W = 62;
-  console.log(`\nPer-field accuracy & stability (${MODEL}, ${RUNS} runs)`);
+  console.log(`\nPer-field accuracy & stability (${label}, ${RUNS} runs)`);
   console.log('─'.repeat(W));
   console.log(
     `${'field'.padEnd(24)}${'correct'.padStart(9)}${'acc'.padStart(7)}   ${'stable'.padStart(13)}`
@@ -293,20 +302,40 @@ async function main() {
     `${'OVERALL'.padEnd(24)}${`${totCorrect}/${totTested}`.padStart(9)}${`${overall}%`.padStart(7)}   ${stabOverallStr.padStart(13)}`
   );
 
-  // ---- cost ----------------------------------------------------------------
-  if (calls > 0) {
-    const avgIn = sumIn / calls;
-    const avgOut = sumOut / calls;
-    console.log(`\nTokens/receipt (avg): in ${avgIn.toFixed(0)}, out ${avgOut.toFixed(0)}`);
-    if (price) {
-      const costPerReceipt = (avgIn * price.in + avgOut * price.out) / 1e6;
-      console.log(
-        `Cost/receipt (avg):   $${costPerReceipt.toFixed(5)}  ` +
-          `(@ $${price.in}/$${price.out} per 1M in/out)`
-      );
-    } else {
-      console.log(`Cost/receipt: no pricing for ${MODEL} (set OPENAI_PRICE_IN / OPENAI_PRICE_OUT).`);
-    }
+  // ---- escalation rate + cost ---------------------------------------------
+  const priceFor = (model: string) =>
+    process.env.OPENAI_PRICE_IN && process.env.OPENAI_PRICE_OUT && model === MODEL
+      ? { in: Number(process.env.OPENAI_PRICE_IN), out: Number(process.env.OPENAI_PRICE_OUT) }
+      : PRICING[model];
+
+  if (ESCALATE) {
+    const rate = extractions ? (100 * escalated) / extractions : 0;
+    console.log(
+      `\nEscalation rate: ${escalated}/${extractions} receipt-runs (${rate.toFixed(0)}%) ` +
+        `fell through to ${SECONDARY}.`
+    );
+  }
+
+  let totalCost = 0;
+  let priced = true;
+  console.log('\nToken usage by model');
+  for (const [model, u] of usageByModel) {
+    const p = priceFor(model);
+    const cost = p ? (u.in * p.in + u.out * p.out) / 1e6 : NaN;
+    if (!p) priced = false;
+    totalCost += p ? cost : 0;
+    console.log(
+      `  ${model.padEnd(14)} ${u.calls} calls, in ${u.in}, out ${u.out}` +
+        (p ? `  →  $${cost.toFixed(5)}` : '  (no pricing)')
+    );
+  }
+  if (extractions > 0) {
+    const blended = totalCost / extractions;
+    console.log(
+      priced
+        ? `\nBlended cost/receipt: $${blended.toFixed(5)} (total $${totalCost.toFixed(5)} / ${extractions} receipts)`
+        : `\nBlended cost/receipt: incomplete — set pricing for all models used.`
+    );
   }
   console.log('');
 }
