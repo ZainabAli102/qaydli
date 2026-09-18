@@ -22,11 +22,7 @@ next-env.d.ts
 # typescript
 *.tsbuildinfo
 
-# test images (owners add real receipts locally; keep the repo free of them)
-/tests/receipts/*.jpg
-/tests/receipts/*.jpeg
-/tests/receipts/*.png
-/tests/receipts/*.webp
+# Test receipt images are committed for this private repo (see tests/receipts/).
 
 # os / editor
 .DS_Store

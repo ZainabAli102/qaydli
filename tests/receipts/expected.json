@@ -5,7 +5,7 @@
   "//4": "as an array passes if the reading matches any listed value.",
   "cases": [
     {
-      "image": "taj.jpg",
+      "image": "Receipt1.webp",
       "human": "Taj Curtains, handwritten invoice, IQD 850,000.",
       "expected": {
         "document_type": "invoice",
@@ -16,7 +16,7 @@
       }
     },
     {
-      "image": "pharmacy.jpg",
+      "image": "Receipt 2.webp",
       "human": "Pharmacy One Al-Naseem, 7 items, price column is the unit price; first item 0.5 x 36,500 = 18,250.",
       "expected": {
         "vendor": "Pharmacy One Al-Naseem",
@@ -28,7 +28,7 @@
       }
     },
     {
-      "image": "bellona.jpg",
+      "image": "Receipt 3.webp",
       "human": "Bellona Furniture Center, voucher no. 01135, USD 1,000, date 15/8 (year missing), photo rotated 90 degrees.",
       "expected": {
         "document_type": "voucher",
@@ -41,7 +41,7 @@
       }
     },
     {
-      "image": "homecenter.jpg",
+      "image": "Receipt 4.webp",
       "human": "Home Center Alhasani, INV/2026/084298, IQD 36,000, paid in full, remaining 0.",
       "expected": {
         "document_type": "invoice",
@@ -55,7 +55,7 @@
       }
     },
     {
-      "image": "adham.jpg",
+      "image": "Receipt 5.webp",
       "human": "Adham Home Furniture, payment receipt PCSH10/2026/00310, USD 800, note 'paid in full'.",
       "expected": {
         "document_type": "payment_receipt",
@@ -69,7 +69,7 @@
       }
     },
     {
-      "image": "mvk.jpg",
+      "image": "Receipt 6.webp",
       "human": "MVK Electric, no. 04390, USD 10 total with 15,000 IQD paid; date uncertain (8 or 18 Mar 2026); item name unclear; expect a conflict flag.",
       "expected": {
         "vendor": "MVK Electric",
