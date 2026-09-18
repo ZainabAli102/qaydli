@@ -1,6 +1,5 @@
-// Lightweight i18n for phase 0. English is the default; Arabic and Kurdish
-// (Sorani) are right-to-left. The dictionaries cover the onboarding and login
-// screens; more keys are added as screens land.
+// i18n for Qaydli. English is the default; Arabic and Kurdish (Sorani) are RTL.
+// Dictionaries are flat string maps so screens can use dotted keys freely.
 
 export const locales = ['en', 'ar', 'ckb'] as const;
 export type Locale = (typeof locales)[number];
@@ -20,42 +19,22 @@ export const localeNames: Record<Locale, string> = {
   ckb: 'کوردی',
 };
 
-type Dict = {
-  appName: string;
-  tagline: string;
-  // auth
-  signIn: string;
-  signInWithEmail: string;
-  signInWithPhone: string;
-  email: string;
-  phone: string;
-  password: string;
-  sendCode: string;
-  verifyCode: string;
-  code: string;
-  createAccount: string;
-  or: string;
-  // onboarding
-  onboardingTitle: string;
-  businessName: string;
-  city: string;
-  baseCurrency: string;
-  usdRate: string;
-  usdRateHint: string;
-  finish: string;
-  // scan
-  scanTitle: string;
-  chooseImage: string;
-  scan: string;
-  scanning: string;
-  result: string;
-  signOut: string;
-  loading: string;
-};
-
-const en: Dict = {
+const en: Record<string, string> = {
   appName: 'Qaydli',
   tagline: 'Snap a receipt. Keep your books.',
+  // common
+  save: 'Save',
+  cancel: 'Cancel',
+  back: 'Back',
+  next: 'Next',
+  loading: 'Loading…',
+  signOut: 'Sign out',
+  edit: 'Edit',
+  delete: 'Delete',
+  retry: 'Try again',
+  close: 'Close',
+  optional: 'optional',
+  // auth
   signIn: 'Sign in',
   signInWithEmail: 'Email',
   signInWithPhone: 'Phone',
@@ -67,6 +46,7 @@ const en: Dict = {
   code: 'Verification code',
   createAccount: 'Create account',
   or: 'or',
+  // onboarding
   onboardingTitle: 'Set up your business',
   businessName: 'Business name',
   city: 'City',
@@ -74,18 +54,124 @@ const en: Dict = {
   usdRate: 'USD → IQD rate',
   usdRateHint: 'How many dinars to one US dollar today.',
   finish: 'Finish',
+  // nav
+  'nav.scan': 'Scan',
+  'nav.dashboard': 'Dashboard',
+  // scan
   scanTitle: 'Scan a receipt',
-  chooseImage: 'Choose a photo',
+  takePhoto: 'Take a photo',
+  fromGallery: 'Choose from gallery',
+  retake: 'Retake',
+  usePhoto: 'Use this photo',
   scan: 'Scan',
-  scanning: 'Scanning…',
-  result: 'Result',
-  signOut: 'Sign out',
-  loading: 'Loading…',
+  'scan.reading': 'Reading the receipt…',
+  'scan.checking': 'Checking the maths…',
+  'scan.categorizing': 'Suggesting a category…',
+  'scan.failed': 'Could not read that. Try again with a clearer photo.',
+  // review
+  'review.title': 'Review & save',
+  'review.photo': 'Photo',
+  'review.vendor': 'Vendor',
+  'review.invoiceNumber': 'Invoice / voucher no.',
+  'review.date': 'Date',
+  'review.currency': 'Currency',
+  'review.total': 'Total',
+  'review.subtotal': 'Subtotal',
+  'review.discount': 'Discount',
+  'review.paid': 'Paid',
+  'review.remaining': 'Remaining',
+  'review.type': 'Type',
+  'review.category': 'Category',
+  'review.paymentMethod': 'Payment method',
+  'review.lineItems': 'Line items',
+  'review.addItem': 'Add item',
+  'review.description': 'Description',
+  'review.qty': 'Qty',
+  'review.unitPrice': 'Unit price',
+  'review.lineTotal': 'Line total',
+  'review.notes': 'Notes',
+  'review.mathsOk': 'The maths add up.',
+  'review.mathsIssues': 'Please double-check the figures:',
+  'review.flags': 'Notes from the scan',
+  'review.save': 'Save transaction',
+  'review.saving': 'Saving…',
+  'review.usdEquiv': 'USD equivalent',
+  'review.iqdEquiv': 'IQD equivalent',
+  'review.confHigh': 'High confidence',
+  'review.confMed': 'Medium confidence',
+  'review.confLow': 'Low — please check',
+  // type
+  'type.expense': 'Expense',
+  'type.income': 'Income',
+  // categories
+  'cat.supplies': 'Supplies',
+  'cat.rent': 'Rent',
+  'cat.salaries': 'Salaries',
+  'cat.utilities': 'Utilities',
+  'cat.transport': 'Transport',
+  'cat.marketing': 'Marketing',
+  'cat.office_fitout': 'Office fit-out',
+  'cat.maintenance': 'Maintenance',
+  'cat.medical_personal': 'Medical & personal',
+  'cat.bank_fees': 'Bank & payment fees',
+  'cat.other': 'Other',
+  // payment methods
+  'pay.cash': 'Cash',
+  'pay.card': 'Card',
+  'pay.transfer': 'Transfer',
+  'pay.other': 'Other',
+  // flags
+  'flag.currency_conflict': 'Two currencies present — check which is right.',
+  'flag.total_mismatch': 'The total does not match the parts.',
+  'flag.line_items_mismatch': 'Line items do not add up to the total.',
+  'flag.amount_in_words_mismatch': 'The amount in words differs from the figures.',
+  'flag.date_year_missing': 'The year was missing — we filled in this year.',
+  'flag.date_uncertain': 'The date was hard to read — please check.',
+  // dashboard
+  'dash.title': 'Dashboard',
+  'dash.moneyIn': 'Money in',
+  'dash.moneyOut': 'Money out',
+  'dash.profit': 'Profit',
+  'dash.byCategory': 'Spending by category',
+  'dash.recent': 'Recent transactions',
+  'dash.noTransactions': 'No transactions yet this month.',
+  'dash.export': 'Export CSV',
+  'dash.newScan': 'Scan a receipt',
+  'dash.prevMonth': 'Previous month',
+  'dash.nextMonth': 'Next month',
+  // trial + upgrade
+  'trial.title': 'Free trial',
+  'trial.used': 'entries used',
+  'trial.of': 'of',
+  'upgrade.title': "You've used your 10 free entries",
+  'upgrade.body':
+    'Thanks for trying Qaydli! Upgrading to keep scanning is coming soon. For now, your books are safe and you can still view and export them.',
+  'upgrade.cta': 'Notify me when upgrades open',
+  'upgrade.viewBooks': 'View my books',
+  'upgrade.noted': 'Thanks — we\'ll let you know.',
+  // demo
+  'demo.badge': 'Demo',
+  'demo.title': 'Try one sample receipt first',
+  'demo.body': "We've loaded a sample receipt. Scan it to see how Qaydli reads and files it — then do your own.",
+  'demo.start': 'Scan the sample',
+  'demo.skip': 'Skip, I\'ll scan my own',
+  'demo.hint': 'This is a sample — tap Scan to try it.',
 };
 
-const ar: Dict = {
+const ar: Record<string, string> = {
   appName: 'قيدلي',
   tagline: 'صوّر الإيصال. نحفظ دفاترك.',
+  save: 'حفظ',
+  cancel: 'إلغاء',
+  back: 'رجوع',
+  next: 'التالي',
+  loading: 'جارٍ التحميل…',
+  signOut: 'تسجيل الخروج',
+  edit: 'تعديل',
+  delete: 'حذف',
+  retry: 'حاول مرة أخرى',
+  close: 'إغلاق',
+  optional: 'اختياري',
   signIn: 'تسجيل الدخول',
   signInWithEmail: 'البريد الإلكتروني',
   signInWithPhone: 'الهاتف',
@@ -104,18 +190,114 @@ const ar: Dict = {
   usdRate: 'سعر الدولار مقابل الدينار',
   usdRateHint: 'عدد الدنانير مقابل دولار أمريكي واحد اليوم.',
   finish: 'إنهاء',
+  'nav.scan': 'مسح',
+  'nav.dashboard': 'لوحة المعلومات',
   scanTitle: 'مسح إيصال',
-  chooseImage: 'اختر صورة',
+  takePhoto: 'التقاط صورة',
+  fromGallery: 'اختيار من المعرض',
+  retake: 'إعادة الالتقاط',
+  usePhoto: 'استخدام هذه الصورة',
   scan: 'مسح',
-  scanning: 'جارٍ المسح…',
-  result: 'النتيجة',
-  signOut: 'تسجيل الخروج',
-  loading: 'جارٍ التحميل…',
+  'scan.reading': 'جارٍ قراءة الإيصال…',
+  'scan.checking': 'جارٍ التحقق من الحسابات…',
+  'scan.categorizing': 'جارٍ اقتراح فئة…',
+  'scan.failed': 'تعذّرت القراءة. حاول بصورة أوضح.',
+  'review.title': 'المراجعة والحفظ',
+  'review.photo': 'الصورة',
+  'review.vendor': 'المورّد',
+  'review.invoiceNumber': 'رقم الفاتورة / السند',
+  'review.date': 'التاريخ',
+  'review.currency': 'العملة',
+  'review.total': 'الإجمالي',
+  'review.subtotal': 'المجموع الفرعي',
+  'review.discount': 'الخصم',
+  'review.paid': 'المدفوع',
+  'review.remaining': 'المتبقي',
+  'review.type': 'النوع',
+  'review.category': 'الفئة',
+  'review.paymentMethod': 'طريقة الدفع',
+  'review.lineItems': 'البنود',
+  'review.addItem': 'إضافة بند',
+  'review.description': 'الوصف',
+  'review.qty': 'الكمية',
+  'review.unitPrice': 'سعر الوحدة',
+  'review.lineTotal': 'الإجمالي',
+  'review.notes': 'ملاحظات',
+  'review.mathsOk': 'الحسابات صحيحة.',
+  'review.mathsIssues': 'يرجى التحقق من الأرقام:',
+  'review.flags': 'ملاحظات من المسح',
+  'review.save': 'حفظ العملية',
+  'review.saving': 'جارٍ الحفظ…',
+  'review.usdEquiv': 'المعادل بالدولار',
+  'review.iqdEquiv': 'المعادل بالدينار',
+  'review.confHigh': 'ثقة عالية',
+  'review.confMed': 'ثقة متوسطة',
+  'review.confLow': 'منخفضة — يرجى التحقق',
+  'type.expense': 'مصروف',
+  'type.income': 'دخل',
+  'cat.supplies': 'مستلزمات',
+  'cat.rent': 'إيجار',
+  'cat.salaries': 'رواتب',
+  'cat.utilities': 'خدمات ومرافق',
+  'cat.transport': 'نقل',
+  'cat.marketing': 'تسويق',
+  'cat.office_fitout': 'تجهيز المكتب',
+  'cat.maintenance': 'صيانة',
+  'cat.medical_personal': 'طبي وشخصي',
+  'cat.bank_fees': 'رسوم بنكية ودفع',
+  'cat.other': 'أخرى',
+  'pay.cash': 'نقداً',
+  'pay.card': 'بطاقة',
+  'pay.transfer': 'تحويل',
+  'pay.other': 'أخرى',
+  'flag.currency_conflict': 'وجود عملتين — تحقّق من الصحيحة.',
+  'flag.total_mismatch': 'الإجمالي لا يطابق الأجزاء.',
+  'flag.line_items_mismatch': 'مجموع البنود لا يساوي الإجمالي.',
+  'flag.amount_in_words_mismatch': 'المبلغ كتابةً يختلف عن الأرقام.',
+  'flag.date_year_missing': 'السنة غير مذكورة — أدرجنا السنة الحالية.',
+  'flag.date_uncertain': 'التاريخ غير واضح — يرجى التحقق.',
+  'dash.title': 'لوحة المعلومات',
+  'dash.moneyIn': 'الوارد',
+  'dash.moneyOut': 'الصادر',
+  'dash.profit': 'الربح',
+  'dash.byCategory': 'الإنفاق حسب الفئة',
+  'dash.recent': 'أحدث العمليات',
+  'dash.noTransactions': 'لا توجد عمليات هذا الشهر بعد.',
+  'dash.export': 'تصدير CSV',
+  'dash.newScan': 'مسح إيصال',
+  'dash.prevMonth': 'الشهر السابق',
+  'dash.nextMonth': 'الشهر التالي',
+  'trial.title': 'النسخة التجريبية',
+  'trial.used': 'عمليات مستخدمة',
+  'trial.of': 'من',
+  'upgrade.title': 'لقد استخدمت إدخالاتك المجانية العشرة',
+  'upgrade.body':
+    'شكراً لتجربتك قيدلي! الترقية لمواصلة المسح قادمة قريباً. دفاترك محفوظة، ويمكنك عرضها وتصديرها.',
+  'upgrade.cta': 'أبلغني عند توفّر الترقية',
+  'upgrade.viewBooks': 'عرض دفاتري',
+  'upgrade.noted': 'شكراً — سنعلمك.',
+  'demo.badge': 'تجربة',
+  'demo.title': 'جرّب إيصالاً نموذجياً أولاً',
+  'demo.body': 'حمّلنا لك إيصالاً نموذجياً. امسحه لترى كيف يقرأه قيدلي ويصنّفه — ثم امسح إيصالك.',
+  'demo.start': 'امسح النموذج',
+  'demo.skip': 'تخطٍّ، سأمسح إيصالي',
+  'demo.hint': 'هذا نموذج — اضغط مسح للتجربة.',
 };
 
-const ckb: Dict = {
+const ckb: Record<string, string> = {
   appName: 'قەیدلی',
   tagline: 'وێنەی پسووڵە بگرە. دەفتەرەکانت پارێزراون.',
+  save: 'پاشەکەوت',
+  cancel: 'هەڵوەشاندنەوە',
+  back: 'گەڕانەوە',
+  next: 'دواتر',
+  loading: 'بارکردن…',
+  signOut: 'چوونەدەرەوە',
+  edit: 'دەستکاری',
+  delete: 'سڕینەوە',
+  retry: 'دووبارە هەوڵبدە',
+  close: 'داخستن',
+  optional: 'ئارەزوومەندانە',
   signIn: 'چوونەژوورەوە',
   signInWithEmail: 'ئیمەیڵ',
   signInWithPhone: 'مۆبایل',
@@ -134,19 +316,104 @@ const ckb: Dict = {
   usdRate: 'ڕێژەی دۆلار بۆ دینار',
   usdRateHint: 'چەند دیناری بۆ یەک دۆلاری ئەمریکی ئەمڕۆ.',
   finish: 'تەواوکردن',
+  'nav.scan': 'سکان',
+  'nav.dashboard': 'داشبۆرد',
   scanTitle: 'سکانی پسووڵە',
-  chooseImage: 'وێنەیەک هەڵبژێرە',
+  takePhoto: 'وێنە بگرە',
+  fromGallery: 'لە گاڵەری هەڵبژێرە',
+  retake: 'دووبارە وێنەگرتن',
+  usePhoto: 'ئەم وێنەیە بەکاربهێنە',
   scan: 'سکان',
-  scanning: 'سکان دەکرێت…',
-  result: 'ئەنجام',
-  signOut: 'چوونەدەرەوە',
-  loading: 'بارکردن…',
+  'scan.reading': 'خوێندنەوەی پسووڵە…',
+  'scan.checking': 'پشکنینی ژمارەکان…',
+  'scan.categorizing': 'پێشنیاری پۆل…',
+  'scan.failed': 'نەخوێندرایەوە. بە وێنەیەکی ڕوونتر هەوڵبدە.',
+  'review.title': 'پێداچوونەوە و پاشەکەوت',
+  'review.photo': 'وێنە',
+  'review.vendor': 'فرۆشیار',
+  'review.invoiceNumber': 'ژمارەی پسووڵە / سەند',
+  'review.date': 'بەروار',
+  'review.currency': 'دراو',
+  'review.total': 'کۆی گشتی',
+  'review.subtotal': 'کۆی بەشەکی',
+  'review.discount': 'داشکاندن',
+  'review.paid': 'دراو',
+  'review.remaining': 'ماوە',
+  'review.type': 'جۆر',
+  'review.category': 'پۆل',
+  'review.paymentMethod': 'شێوازی پارەدان',
+  'review.lineItems': 'بڕگەکان',
+  'review.addItem': 'زیادکردنی بڕگە',
+  'review.description': 'وەسف',
+  'review.qty': 'بڕ',
+  'review.unitPrice': 'نرخی یەکە',
+  'review.lineTotal': 'کۆی بڕگە',
+  'review.notes': 'تێبینی',
+  'review.mathsOk': 'ژمارەکان دروستن.',
+  'review.mathsIssues': 'تکایە ژمارەکان بپشکنە:',
+  'review.flags': 'تێبینی لە سکانەوە',
+  'review.save': 'پاشەکەوتی مامەڵە',
+  'review.saving': 'پاشەکەوت دەکرێت…',
+  'review.usdEquiv': 'هاوتای دۆلار',
+  'review.iqdEquiv': 'هاوتای دینار',
+  'review.confHigh': 'دڵنیایی بەرز',
+  'review.confMed': 'دڵنیایی مامناوەند',
+  'review.confLow': 'نزم — تکایە بپشکنە',
+  'type.expense': 'خەرجی',
+  'type.income': 'داهات',
+  'cat.supplies': 'پێداویستی',
+  'cat.rent': 'کرێ',
+  'cat.salaries': 'مووچە',
+  'cat.utilities': 'خزمەتگوزاری',
+  'cat.transport': 'گواستنەوە',
+  'cat.marketing': 'بازاڕکردن',
+  'cat.office_fitout': 'ڕازاندنەوەی ئۆفیس',
+  'cat.maintenance': 'چاککردنەوە',
+  'cat.medical_personal': 'پزیشکی و کەسی',
+  'cat.bank_fees': 'کرێی بانک و پارەدان',
+  'cat.other': 'هیتر',
+  'pay.cash': 'نەقد',
+  'pay.card': 'کارت',
+  'pay.transfer': 'گواستنەوە',
+  'pay.other': 'هیتر',
+  'flag.currency_conflict': 'دوو دراو هەیە — کامیان ڕاستە بپشکنە.',
+  'flag.total_mismatch': 'کۆی گشتی لەگەڵ بەشەکان ناگونجێت.',
+  'flag.line_items_mismatch': 'بڕگەکان کۆی گشتی پێک ناهێنن.',
+  'flag.amount_in_words_mismatch': 'بڕی نووسراو بە وشە جیاوازە لە ژمارەکان.',
+  'flag.date_year_missing': 'ساڵ نەبوو — ساڵی ئێستامان دانا.',
+  'flag.date_uncertain': 'بەروار ناڕوون بوو — تکایە بپشکنە.',
+  'dash.title': 'داشبۆرد',
+  'dash.moneyIn': 'هاتنە ژوورەوە',
+  'dash.moneyOut': 'چوونە دەرەوە',
+  'dash.profit': 'قازانج',
+  'dash.byCategory': 'خەرجی بەپێی پۆل',
+  'dash.recent': 'دوایین مامەڵەکان',
+  'dash.noTransactions': 'هێشتا هیچ مامەڵەیەک نییە ئەم مانگە.',
+  'dash.export': 'دەرهێنانی CSV',
+  'dash.newScan': 'سکانی پسووڵە',
+  'dash.prevMonth': 'مانگی پێشوو',
+  'dash.nextMonth': 'مانگی داهاتوو',
+  'trial.title': 'تاقیکردنەوەی خۆڕایی',
+  'trial.used': 'تۆمار بەکارهاتوو',
+  'trial.of': 'لە',
+  'upgrade.title': 'هەر ١٠ تۆماری خۆڕاییەکەت بەکارهێنا',
+  'upgrade.body':
+    'سوپاس بۆ تاقیکردنەوەی قەیدلی! بەرزکردنەوە بۆ بەردەوامبوون بەم زووانە دێت. دەفتەرەکانت پارێزراون و دەتوانیت بیانبینیت و دەریانبهێنیت.',
+  'upgrade.cta': 'کاتێک بەردەست بوو ئاگادارم بکەوە',
+  'upgrade.viewBooks': 'دەفتەرەکانم ببینە',
+  'upgrade.noted': 'سوپاس — ئاگادارت دەکەینەوە.',
+  'demo.badge': 'نمونە',
+  'demo.title': 'سەرەتا نموونەیەک تاقیبکەوە',
+  'demo.body': 'پسووڵەیەکی نموونەمان بارکرد. سکانی بکە بۆ ئەوەی ببینیت چۆن قەیدلی دەیخوێنێتەوە و پۆلی دەکات — پاشان هی خۆت.',
+  'demo.start': 'نموونە سکان بکە',
+  'demo.skip': 'تێپەڕاندن، هی خۆم دەکەم',
+  'demo.hint': 'ئەمە نموونەیە — سکان دابگرە بۆ تاقیکردنەوە.',
 };
 
-export const dictionaries: Record<Locale, Dict> = { en, ar, ckb };
+export const dictionaries: Record<Locale, Record<string, string>> = { en, ar, ckb };
 
-export type TranslationKey = keyof Dict;
+export type TranslationKey = string;
 
-export function t(locale: Locale, key: TranslationKey): string {
-  return dictionaries[locale][key] ?? dictionaries[defaultLocale][key];
+export function t(locale: Locale, key: string, fallback?: string): string {
+  return dictionaries[locale][key] ?? dictionaries[defaultLocale][key] ?? fallback ?? key;
 }

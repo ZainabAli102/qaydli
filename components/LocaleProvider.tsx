@@ -20,7 +20,7 @@ import {
 type LocaleContextValue = {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  t: (key: TranslationKey) => string;
+  t: (key: TranslationKey, fallback?: string) => string;
 };
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
@@ -51,7 +51,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
           // storage may be unavailable (private mode); ignore.
         }
       },
-      t: (key) => translate(locale, key),
+      t: (key, fallback) => translate(locale, key, fallback),
     }),
     [locale]
   );
