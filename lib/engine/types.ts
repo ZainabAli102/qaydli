@@ -46,6 +46,8 @@ export interface Flag {
 export interface ReceiptResult {
   document_type: Confident<DocumentType>;
   vendor: Confident<string | null>;
+  /** Vendor name transliterated to Latin script (English spelling). */
+  vendor_latin: Confident<string | null>;
   vendor_phone: Confident<string | null>;
   invoice_number: Confident<string | null>;
   date: Confident<string | null>; // ISO 8601 (YYYY-MM-DD) or null
@@ -91,6 +93,8 @@ export interface ExtractOptions {
   apiKey?: string;
   model?: string;
   signal?: AbortSignal;
+  /** Reference "today" the prompt uses to resolve years/missing dates. Default: now. */
+  now?: Date;
   /** Run the in-code maths checker after extraction. Default: true. */
   runChecks?: boolean;
 }

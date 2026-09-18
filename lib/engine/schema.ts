@@ -136,6 +136,7 @@ export function parseReceiptResult(input: unknown): ReceiptResult {
   return {
     document_type: confident(o.document_type, asDocType, 0.6),
     vendor: confident(o.vendor, asString),
+    vendor_latin: confident(o.vendor_latin, asString),
     vendor_phone: confident(o.vendor_phone, asString),
     invoice_number: confident(o.invoice_number, asString),
     date: confident(o.date, asIsoDate),

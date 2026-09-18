@@ -6,13 +6,13 @@
 
 import type { ExtractOptions, ReceiptResult } from './types';
 import { getAdapter } from './providers';
-import { SYSTEM_PROMPT, USER_PROMPT } from './prompt';
+import { SYSTEM_PROMPT, buildUserPrompt } from './prompt';
 import { runChecks } from './checker';
 
 export * from './types';
 export { parseReceiptResult, normalizeDigits, toNumber } from './schema';
 export { getAdapter, createOpenAIAdapter, createAnthropicAdapter } from './providers';
-export { SYSTEM_PROMPT, USER_PROMPT } from './prompt';
+export { SYSTEM_PROMPT, USER_PROMPT, buildUserPrompt } from './prompt';
 export { runChecks, wordsToNumberEn } from './checker';
 
 export async function extract(
@@ -28,7 +28,7 @@ export async function extract(
     apiKey: opts.apiKey,
     signal: opts.signal,
     systemPrompt: SYSTEM_PROMPT,
-    userPrompt: USER_PROMPT,
+    userPrompt: buildUserPrompt(opts.now ?? new Date()),
   });
 
   return opts.runChecks === false ? result : runChecks(result);

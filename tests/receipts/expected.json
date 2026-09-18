@@ -19,7 +19,8 @@
       "image": "Receipt 2.webp",
       "human": "Pharmacy One Al-Naseem, 7 items, price column is the unit price; first item 0.5 x 36,500 = 18,250.",
       "expected": {
-        "vendor": "Pharmacy One Al-Naseem",
+        "vendor": "فارمسي وان النسيم",
+        "vendor_latin": "Pharmacy One Al-Naseem",
         "date": "2026-08-31",
         "currency": "IQD",
         "total": 105250,

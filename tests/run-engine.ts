@@ -73,16 +73,27 @@ function compareField(key: string, expected: unknown, got: unknown): boolean {
     const g = Number(got);
     return Number.isFinite(e) && Number.isFinite(g) && within1pct(g, e);
   }
-  if (key === 'vendor') {
-    const e = norm(expected);
-    const g = norm(got);
-    return e !== '' && g !== '' && (g.includes(e) || e.includes(g));
-  }
   if (key === 'invoice_number') {
     return norm(expected).replace(/\s/g, '') === norm(got).replace(/\s/g, '');
   }
   // document_type, currency, paid_currency, language, date, ...
   return norm(expected) === norm(got);
+}
+
+// Vendor matching is script-agnostic: a business may be read in Arabic/Kurdish
+// (vendor) or transliterated (vendor_latin), so the expected brand passes if it
+// matches EITHER field, ignoring spaces and punctuation.
+function normLoose(s: unknown): string {
+  return String(s ?? '')
+    .toLowerCase()
+    .replace(/[\s._\-]/g, '');
+}
+function matchVendor(expected: unknown, result: ReceiptResult): boolean {
+  const e = normLoose(expected);
+  if (!e) return false;
+  return [fieldValue(result, 'vendor'), fieldValue(result, 'vendor_latin')]
+    .map(normLoose)
+    .some((c) => c !== '' && (c.includes(e) || e.includes(c)));
 }
 
 type Tally = { tested: number; correct: number };
@@ -136,7 +147,10 @@ async function main() {
 
     for (const [key, exp] of Object.entries(c.expected)) {
       if (NON_SCORED.has(key)) continue;
-      const ok = compareField(key, exp, fieldValue(result, key));
+      const ok =
+        key === 'vendor' || key === 'vendor_latin'
+          ? matchVendor(exp, result)
+          : compareField(key, exp, fieldValue(result, key));
       bump(key, ok);
       caseTested += 1;
       if (ok) caseCorrect += 1;

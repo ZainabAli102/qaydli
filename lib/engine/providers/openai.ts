@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import type { AdapterInput, ProviderAdapter } from '../types';
 import { parseReceiptResult } from '../schema';
+import { resizeForVision } from '../image';
 
 // Strip accidental ```json fences and grab the outermost JSON object.
 function extractJson(text: string): string {
@@ -24,7 +25,10 @@ export function createOpenAIAdapter(): ProviderAdapter {
 
       const client = new OpenAI({ apiKey });
       const model = input.model ?? process.env.OPENAI_VISION_MODEL ?? 'gpt-4o';
-      const dataUrl = `data:${input.mimeType};base64,${input.imageBase64}`;
+
+      // Down-scale to a 2048px long side (and EXIF-orient) before upload.
+      const img = await resizeForVision(input.imageBase64, input.mimeType, 2048);
+      const dataUrl = `data:${img.mimeType};base64,${img.base64}`;
 
       const res = await client.chat.completions.create(
         {
