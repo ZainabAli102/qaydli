@@ -28,7 +28,7 @@ export function InvoiceDetailClient(props: {
   today: string;
 }) {
   const inv = props.invoice;
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const router = useRouter();
 
   const balance = Math.max(0, inv.total - inv.paid);
@@ -45,8 +45,9 @@ export function InvoiceDetailClient(props: {
 
   function publicUrl(): string {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    return inv.public_token ? `${origin}/i/${inv.public_token}` : origin;
+    return inv.public_token ? `${origin}/i/${inv.public_token}?lang=${locale}` : origin;
   }
+  const pdfUrl = `/api/invoices/${inv.id}/pdf?lang=${locale}`;
 
   function waLink(template: string): string {
     const msg = interpolate(t(template), {
@@ -63,7 +64,7 @@ export function InvoiceDetailClient(props: {
 
   async function share() {
     const url = publicUrl();
-    const pdf = `${window.location.origin}/api/invoices/${inv.id}/pdf`;
+    const pdf = `${window.location.origin}${pdfUrl}`;
     if (navigator.share) {
       try {
         await navigator.share({ title: inv.number, text: `${inv.number} — ${props.businessName}`, url: pdf });
@@ -216,7 +217,7 @@ export function InvoiceDetailClient(props: {
             <Link2 size={16} /> {copied ? t('inv.linkCopied') : t('inv.copyLink')}
           </button>
           <a
-            href={`/api/invoices/${inv.id}/pdf`}
+            href={pdfUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-medium text-slate-700"

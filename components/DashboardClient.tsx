@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Camera, PencilLine, Download, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Camera, PencilLine, Download, Check, Settings } from 'lucide-react';
 import { useLocale } from '@/components/LocaleProvider';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { BottomNav } from '@/components/BottomNav';
@@ -66,6 +66,13 @@ export function DashboardClient(props: {
             <p className="text-sm text-slate-500">{props.businessName}</p>
           </div>
           <div className="flex items-center gap-2">
+            <Link
+              href="/settings"
+              aria-label={t('settings.title')}
+              className="rounded-md border border-slate-300 p-1.5 text-slate-600"
+            >
+              <Settings size={18} />
+            </Link>
             <LanguageSwitcher />
             <form action={signOut}>
               <button className="rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-700">
