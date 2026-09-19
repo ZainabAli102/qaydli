@@ -2,15 +2,13 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getSessionContext } from '@/lib/session';
 import { getInvoice } from '@/lib/invoice-queries';
-import { renderInvoiceHtml } from '@/lib/invoice-html';
-import { htmlToPdf, PdfUnavailable } from '@/lib/pdf';
+import { renderInvoicePdf } from '@/lib/invoice-pdf';
 import { displayStatus } from '@/lib/invoices';
 import { todayISO } from '@/lib/dates';
 import { isLocale, defaultLocale } from '@/lib/i18n';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-// PDF rendering can cold-start Chromium; give the function headroom.
 export const maxDuration = 30;
 
 // GET /api/invoices/[id]/pdf?lang=ar
@@ -45,45 +43,42 @@ export async function GET(
     logoUrl = signed?.signedUrl ?? null;
   }
 
-  const html = renderInvoiceHtml({
-    locale,
-    number: invoice.number,
-    currency: invoice.currency,
-    issueDate: invoice.issue_date,
-    dueDate: invoice.due_date,
-    display: displayStatus({ status: invoice.status, dueDate: invoice.due_date, today: todayISO() }),
-    items: invoice.items,
-    subtotal: invoice.subtotal,
-    discount: invoice.discount,
-    total: invoice.total,
-    paid: invoice.paid,
-    notes: invoice.notes,
-    accent: biz?.accent_color ?? null,
-    business: {
-      name: biz?.name ?? business.name,
-      phone: biz?.phone ?? null,
-      address: biz?.address ?? null,
-      email: biz?.email ?? null,
-      taxNumber: biz?.tax_number ?? null,
-      paymentInstructions: biz?.payment_instructions ?? null,
-      footer: biz?.invoice_footer ?? null,
-      logoUrl,
-    },
-    client: {
-      name: invoice.client?.name ?? invoice.client_name,
-      phone: invoice.client?.phone ?? null,
-      email: invoice.client?.email ?? null,
-    },
-  });
-
   let pdf: Buffer;
   try {
-    pdf = await htmlToPdf(html);
+    pdf = await renderInvoicePdf({
+      locale,
+      number: invoice.number,
+      currency: invoice.currency,
+      issueDate: invoice.issue_date,
+      dueDate: invoice.due_date,
+      display: displayStatus({ status: invoice.status, dueDate: invoice.due_date, today: todayISO() }),
+      items: invoice.items,
+      subtotal: invoice.subtotal,
+      discount: invoice.discount,
+      total: invoice.total,
+      paid: invoice.paid,
+      notes: invoice.notes,
+      accent: biz?.accent_color ?? null,
+      business: {
+        name: biz?.name ?? business.name,
+        phone: biz?.phone ?? null,
+        address: biz?.address ?? null,
+        email: biz?.email ?? null,
+        taxNumber: biz?.tax_number ?? null,
+        paymentInstructions: biz?.payment_instructions ?? null,
+        footer: biz?.invoice_footer ?? null,
+        logoUrl,
+      },
+      client: {
+        name: invoice.client?.name ?? invoice.client_name,
+        phone: invoice.client?.phone ?? null,
+        email: invoice.client?.email ?? null,
+      },
+    });
   } catch (err) {
-    const status = err instanceof PdfUnavailable ? 503 : 502;
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'PDF generation failed' },
-      { status }
+      { status: 500 }
     );
   }
 
