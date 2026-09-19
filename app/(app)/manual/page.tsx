@@ -3,6 +3,7 @@ import { getSessionContext } from '@/lib/session';
 import { createClient } from '@/lib/supabase/server';
 import { getEntryCount } from '@/lib/queries';
 import { FREE_TRIAL_LIMIT } from '@/lib/domain';
+import { todayISO } from '@/lib/dates';
 import { ReviewForm, type ReviewInitial } from '@/components/ReviewForm';
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,7 @@ export default async function ManualPage() {
   const supabase = await createClient();
   if ((await getEntryCount(supabase)) >= FREE_TRIAL_LIMIT) redirect('/upgrade');
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO(); // Asia/Baghdad
 
   const initial: ReviewInitial = {
     documentId: null,

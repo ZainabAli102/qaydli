@@ -4,10 +4,9 @@ import { createClient } from '@/lib/supabase/server';
 import { getEntryCount, getMonthTransactions, getAllTransactions } from '@/lib/queries';
 import { DashboardClient } from '@/components/DashboardClient';
 import { FREE_TRIAL_LIMIT, type Category } from '@/lib/domain';
+import { currentMonth, isMonth, monthRange } from '@/lib/dates';
 
 export const dynamic = 'force-dynamic';
-
-const pad = (n: number) => String(n).padStart(2, '0');
 
 export default async function DashboardPage({
   searchParams,
@@ -19,14 +18,10 @@ export default async function DashboardPage({
   if (!business) redirect('/onboarding');
 
   const { m, saved } = await searchParams;
-  const now = new Date();
+  const thisMonth = currentMonth(); // Asia/Baghdad — default view after login
   const allTime = m === 'all';
-  const month = m && /^\d{4}-\d{2}$/.test(m) ? m : `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
-  const [y, mo] = month.split('-').map(Number);
-  const monthStart = `${month}-01`;
-  const nextStart = mo === 12 ? `${y + 1}-01-01` : `${y}-${pad(mo + 1)}-01`;
-  const prevMonth = mo === 1 ? `${y - 1}-12` : `${y}-${pad(mo - 1)}`;
-  const nextMonth = mo === 12 ? `${y + 1}-01` : `${y}-${pad(mo + 1)}`;
+  const month = isMonth(m) ? m : thisMonth;
+  const { start: monthStart, nextStart, prev: prevMonth, next: nextMonth } = monthRange(month);
 
   const supabase = await createClient();
   const [txns, entries] = await Promise.all([
@@ -49,13 +44,14 @@ export default async function DashboardPage({
     .map(([category, amount]) => ({ category, amount }))
     .sort((a, b) => b.amount - a.amount);
 
-  const savedMonth = saved && /^\d{4}-\d{2}$/.test(saved) ? saved : null;
+  const savedMonth = isMonth(saved) ? saved : null;
 
   return (
     <DashboardClient
       businessName={business.name}
       usdIqdRate={business.usd_iqd_rate}
       month={allTime ? 'all' : month}
+      thisMonth={thisMonth}
       allTime={allTime}
       prevMonth={prevMonth}
       nextMonth={nextMonth}

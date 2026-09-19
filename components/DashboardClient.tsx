@@ -28,6 +28,7 @@ export function DashboardClient(props: {
   businessName: string;
   usdIqdRate: number;
   month: string;
+  thisMonth: string;
   allTime: boolean;
   prevMonth: string;
   nextMonth: string;
@@ -45,10 +46,7 @@ export function DashboardClient(props: {
   const profit = props.moneyIn - props.moneyOut;
   const maxCat = props.categories.reduce((m, c) => Math.max(m, c.amount), 0);
   const trialPct = Math.min(100, (props.entries / props.trialLimit) * 100);
-  const thisMonth = (() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-  })();
+  const thisMonth = props.thisMonth;
 
   // "Saved to <Month>" toast after a save; then clean the URL.
   const [toast, setToast] = useState<string | null>(

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getSessionContext } from '@/lib/session';
 import { getEntryCount } from '@/lib/queries';
 import { toIqd, type Currency } from '@/lib/money';
+import { todayISO, monthOf } from '@/lib/dates';
 import {
   typeToDirection,
   FREE_TRIAL_LIMIT,
@@ -38,8 +39,6 @@ export type SaveResult =
   | { error: 'save'; message: string }
   | void;
 
-const pad = (n: number) => String(n).padStart(2, '0');
-
 export async function saveTransaction(input: SaveTransactionInput): Promise<SaveResult> {
   const { user, business } = await getSessionContext();
   if (!user || !business) return { error: 'auth', message: 'Your session has expired. Please sign in again.' };
@@ -51,6 +50,10 @@ export async function saveTransaction(input: SaveTransactionInput): Promise<Save
 
   const amountIqd = toIqd(input.total, input.currency, business.usd_iqd_rate);
 
+  // Never leave occurred_on null — a null date drops out of every month view
+  // (it only shows under "All time"). Default a blank date to today (Baghdad).
+  const occurredOn = /^\d{4}-\d{2}-\d{2}$/.test(input.date) ? input.date : todayISO();
+
   const { error: txnErr } = await supabase.from('transactions').insert({
     business_id: business.id,
     document_id: input.documentId,
@@ -61,7 +64,7 @@ export async function saveTransaction(input: SaveTransactionInput): Promise<Save
     category: input.category,
     payment_method: input.paymentMethod,
     vendor: input.vendor || null,
-    occurred_on: input.date || null,
+    occurred_on: occurredOn,
     notes: input.notes || null,
   });
   if (txnErr) {
@@ -79,10 +82,8 @@ export async function saveTransaction(input: SaveTransactionInput): Promise<Save
     if (docErr) console.error('[saveTransaction] documents update failed:', docErr);
   }
 
-  // Open the dashboard on the transaction's own month and flag the toast.
-  const now = new Date();
-  const ym = input.date && /^\d{4}-\d{2}/.test(input.date)
-    ? input.date.slice(0, 7)
-    : `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+  // Open the dashboard on the transaction's own month and flag the toast —
+  // derived from the SAME date we stored, via the shared helper.
+  const ym = monthOf(occurredOn);
   redirect(`/dashboard?m=${ym}&saved=${ym}`);
 }
