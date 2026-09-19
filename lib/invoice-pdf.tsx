@@ -74,6 +74,16 @@ const STATUS_COLOR: Record<string, string> = {
   overdue: '#dc2626',
 };
 
+// Strict-grid geometry (points). A4 content width = 595.28 − 2*40 ≈ 515.
+const MARGIN = 40;
+const CONTENT_W = 595.28 - MARGIN * 2;
+const HEADER_H = 150; // fixed → items table always starts at the same y
+const PARTIES_H = 96; // fixed
+const ROW_H = 22;
+const MIN_ROWS = 6;
+const TOTALS_W = Math.round(CONTENT_W * 0.4);
+const META_LABEL_W = 82;
+
 function InvoiceDoc({ d }: { d: InvoiceHtmlData }) {
   const rtl = dir(d.locale) === 'rtl';
   const accent = normalizeHex(d.accent, DEFAULT_ACCENT);
@@ -88,146 +98,145 @@ function InvoiceDoc({ d }: { d: InvoiceHtmlData }) {
   const align = (rtl ? 'right' : 'left') as 'right' | 'left';
   const numAlign = (rtl ? 'left' : 'right') as 'right' | 'left';
   const rowDir = (rtl ? 'row-reverse' : 'row') as 'row' | 'row-reverse';
+  const padRows = Math.max(0, MIN_ROWS - d.items.length);
 
   const s = StyleSheet.create({
     page: {
-      paddingVertical: 44,
-      paddingHorizontal: 40,
-      paddingBottom: 56,
+      paddingTop: 24,
+      paddingHorizontal: MARGIN,
+      paddingBottom: 40,
       fontFamily: rtl ? 'Naskh' : 'Sans',
       fontSize: 10,
       color: '#0f172a',
     },
-    top: { flexDirection: rowDir, justifyContent: 'space-between' },
-    brandRow: { flexDirection: rowDir },
-    logo: { height: 52, width: 52, maxWidth: 140, objectFit: 'contain', marginHorizontal: 10 },
+    // --- header band ---
+    header: { height: HEADER_H, flexDirection: rowDir, justifyContent: 'space-between' },
+    brand: { flexGrow: 1, flexBasis: 0, paddingRight: rtl ? 0 : 16, paddingLeft: rtl ? 16 : 0 },
+    logo: { height: 48, maxWidth: 150, objectFit: 'contain', marginBottom: 8, alignSelf: rtl ? 'flex-end' : 'flex-start' },
     bizName: { fontSize: 15, fontWeight: 'bold', color: accent, textAlign: align, marginBottom: 2 },
-    muted: { color: '#64748b', fontSize: 9, textAlign: align },
-    doc: { textAlign: rtl ? 'left' : 'right', maxWidth: 200 },
-    stamp: {
-      alignSelf: rtl ? 'flex-start' : 'flex-end',
-      borderWidth: 1.5,
-      borderColor: statusColor,
-      color: statusColor,
-      borderRadius: 5,
-      fontSize: 9,
-      fontWeight: 'bold',
-      letterSpacing: 1,
-      textTransform: 'uppercase',
-      paddingVertical: 2,
-      paddingHorizontal: 8,
-    },
-    invWord: { fontSize: 26, fontWeight: 'bold', letterSpacing: 1, marginTop: 8, textTransform: 'uppercase' },
-    invNo: { fontSize: 12, fontWeight: 'bold', color: accent, marginBottom: 6 },
-    docline: { fontSize: 10, color: '#334155' },
-    label: { fontSize: 9, color: '#94a3b8', fontWeight: 'bold', letterSpacing: 0.5, textAlign: align },
-    billto: { marginTop: 26, alignItems: rtl ? 'flex-end' : 'flex-start' },
-    clientName: { fontWeight: 'bold', fontSize: 12, textAlign: align, marginTop: 2 },
-    th: {
-      flexDirection: rowDir,
-      backgroundColor: accent,
-      paddingVertical: 7,
-      paddingHorizontal: 6,
-    },
-    tr: { flexDirection: rowDir, borderBottomWidth: 1, borderBottomColor: '#eef2f7', paddingVertical: 6, paddingHorizontal: 6 },
+    muted: { color: '#64748b', fontSize: 9, textAlign: align, marginTop: 1 },
+    docCol: { width: 220 },
+    invWord: { fontSize: 28, fontWeight: 'bold', letterSpacing: 1, textTransform: 'uppercase', textAlign: numAlign, marginBottom: 8 },
+    metaRow: { flexDirection: rowDir, marginTop: 3 },
+    metaLabel: { width: META_LABEL_W, color: '#94a3b8', fontSize: 8.5, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 0.4, textAlign: align },
+    metaValue: { flexGrow: 1, flexBasis: 0, fontSize: 10, textAlign: numAlign },
+    metaStatus: { flexGrow: 1, flexBasis: 0, fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase', color: statusColor, textAlign: numAlign },
+    rule: { height: 2, backgroundColor: accent, marginTop: 8, marginBottom: 16 },
+    // --- parties ---
+    parties: { height: PARTIES_H, flexDirection: rowDir },
+    party: { flexGrow: 1, flexBasis: 0 },
+    partyGap: { width: 24 },
+    label: { fontSize: 8.5, color: '#94a3b8', fontWeight: 'bold', letterSpacing: 0.5, textTransform: 'uppercase', textAlign: align },
+    partyName: { fontWeight: 'bold', fontSize: 11, textAlign: align, marginTop: 3, marginBottom: 1 },
+    // --- items ---
+    th: { flexDirection: rowDir, backgroundColor: accent, paddingVertical: 6, paddingHorizontal: 6 },
+    tr: { flexDirection: rowDir, minHeight: ROW_H, borderBottomWidth: 1, borderBottomColor: '#eef2f7', paddingVertical: 5, paddingHorizontal: 6 },
     trAlt: { backgroundColor: '#f8fafc' },
     hIdx: { width: 20, textAlign: 'center', color: '#fff', fontWeight: 'bold', fontSize: 8.5 },
     hDesc: { flexGrow: 1, flexBasis: 0, textAlign: align, color: '#fff', fontWeight: 'bold', fontSize: 8.5 },
-    hQty: { width: 32, textAlign: numAlign, color: '#fff', fontWeight: 'bold', fontSize: 8.5 },
-    hNum: { width: 92, textAlign: numAlign, color: '#fff', fontWeight: 'bold', fontSize: 8.5 },
+    hQty: { width: 34, textAlign: numAlign, color: '#fff', fontWeight: 'bold', fontSize: 8.5 },
+    hNum: { width: 96, textAlign: numAlign, color: '#fff', fontWeight: 'bold', fontSize: 8.5 },
     // The '(IQD)' tag is Latin — pin it to the Latin font so it renders
     // regardless of the Arabic font's Latin coverage/subsetting.
     curTag: { fontFamily: 'Sans' },
     cIdx: { width: 20, textAlign: 'center', color: '#94a3b8' },
     cDesc: { flexGrow: 1, flexBasis: 0, textAlign: align, color: '#334155' },
-    cQty: { width: 32, textAlign: numAlign },
-    cNum: { width: 92, textAlign: numAlign },
-    totals: { marginTop: 16, alignSelf: rtl ? 'flex-start' : 'flex-end', width: 260 },
-    tline: { flexDirection: rowDir, justifyContent: 'space-between', paddingVertical: 3 },
-    tstrong: { borderTopWidth: 1, borderTopColor: '#e2e8f0', marginTop: 4, paddingTop: 7, fontWeight: 'bold' },
-    equiv: { textAlign: numAlign, color: '#94a3b8', fontSize: 9, paddingBottom: 2 },
-    grand: {
-      flexDirection: rowDir,
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginTop: 8,
-      paddingVertical: 9,
-      paddingHorizontal: 11,
-      borderRadius: 6,
-      backgroundColor: accent,
-    },
-    grandText: { color: '#fff', fontWeight: 'bold', fontSize: 13 },
-    pay: {
-      marginTop: 20,
-      padding: 11,
+    cQty: { width: 34, textAlign: numAlign },
+    cNum: { width: 96, textAlign: numAlign },
+    // --- totals + side box ---
+    lower: { flexDirection: rowDir, marginTop: 24, alignItems: 'flex-start' },
+    sideBox: {
+      flexGrow: 1,
+      flexBasis: 0,
+      marginRight: rtl ? 0 : 16,
+      marginLeft: rtl ? 16 : 0,
+      padding: 12,
       backgroundColor: '#f8fafc',
       borderRadius: 8,
       [rtl ? 'borderRightWidth' : 'borderLeftWidth']: 3,
       [rtl ? 'borderRightColor' : 'borderLeftColor']: accent,
     },
-    notes: { marginTop: 14, color: '#475569', textAlign: align },
-    footer: {
-      position: 'absolute',
-      bottom: 28,
-      left: 40,
-      right: 40,
-      borderTopWidth: 2,
-      borderTopColor: accent,
-      paddingTop: 8,
+    sideBody: { textAlign: align, marginTop: 4, color: '#475569' },
+    totals: { width: TOTALS_W },
+    tline: { flexDirection: rowDir, justifyContent: 'space-between', paddingVertical: 3 },
+    tstrong: { borderTopWidth: 1, borderTopColor: '#e2e8f0', marginTop: 4, paddingTop: 7, fontWeight: 'bold' },
+    grand: {
+      flexDirection: rowDir,
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: 8,
+      paddingVertical: 8,
+      paddingHorizontal: 11,
+      borderRadius: 6,
+      backgroundColor: accent,
     },
-    footNote: { textAlign: 'center', color: '#334155', fontSize: 9 },
-    footPage: { textAlign: 'center', color: '#94a3b8', fontSize: 8, marginTop: 3 },
+    grandText: { color: '#fff', fontWeight: 'bold', fontSize: 13 },
+    equiv: { textAlign: numAlign, color: '#94a3b8', fontSize: 9, marginTop: 6 },
+    // --- footer ---
+    spacer: { flexGrow: 1 },
+    footer: { borderTopWidth: 2, borderTopColor: accent, paddingTop: 8, flexDirection: rowDir, justifyContent: 'space-between' },
+    footNote: { color: '#334155', fontSize: 9, flexShrink: 1 },
+    footPage: { color: '#94a3b8', fontSize: 8.5 },
   });
+
+  const metaRow = (label: string, valueNode: React.ReactNode) => (
+    <View style={s.metaRow}>
+      <Text style={s.metaLabel}>{tr(label)}</Text>
+      {valueNode}
+    </View>
+  );
 
   return (
     <Document>
       <Page size="A4" style={s.page}>
-        {/* Header */}
-        <View style={s.top}>
-          <View style={s.brandRow}>
+        {/* 1. Header band (fixed height): brand | INVOICE + meta table */}
+        <View style={s.header}>
+          <View style={s.brand}>
             {/* react-pdf's Image is a PDF primitive, not an <img>; it has no alt. */}
             {/* eslint-disable-next-line jsx-a11y/alt-text */}
             {d.business.logoUrl ? <Image style={s.logo} src={d.business.logoUrl} /> : null}
-            <View>
-              <Text style={s.bizName}>{rtlText(d.business.name)}</Text>
-              {d.business.address ? <Text style={s.muted}>{rtlText(d.business.address)}</Text> : null}
-              {d.business.phone ? <Text style={s.muted}>{d.business.phone}</Text> : null}
-              {d.business.email ? <Text style={s.muted}>{d.business.email}</Text> : null}
-              {d.business.taxNumber ? (
-                <Text style={s.muted}>
-                  {tr('inv.taxNumber')}: {d.business.taxNumber}
-                </Text>
-              ) : null}
-            </View>
-          </View>
-          <View style={s.doc}>
-            <Text style={s.stamp}>{tr(`inv.status.${d.display}`)}</Text>
-            <Text style={s.invWord}>{tr('inv.invoiceNo')}</Text>
-            <Text style={s.invNo}>{d.number}</Text>
-            <Text style={s.docline}>
-              <Text style={s.label}>{tr('inv.date')}: </Text>
-              {formatDate(d.issueDate)}
-            </Text>
-            {d.dueDate ? (
-              <Text style={s.docline}>
-                <Text style={s.label}>{tr('inv.due')}: </Text>
-                {formatDate(d.dueDate)}
+            <Text style={s.bizName}>{rtlText(d.business.name)}</Text>
+            {d.business.address ? <Text style={s.muted}>{rtlText(d.business.address)}</Text> : null}
+            {d.business.phone ? <Text style={s.muted}>{d.business.phone}</Text> : null}
+            {d.business.email ? <Text style={s.muted}>{d.business.email}</Text> : null}
+            {d.business.taxNumber ? (
+              <Text style={s.muted}>
+                {tr('inv.taxNumber')}: {d.business.taxNumber}
               </Text>
             ) : null}
           </View>
+          <View style={s.docCol}>
+            <Text style={s.invWord}>{tr('inv.invoiceNo')}</Text>
+            {metaRow('inv.numberLabel', <Text style={s.metaValue}>{d.number}</Text>)}
+            {metaRow('inv.date', <Text style={s.metaValue}>{formatDate(d.issueDate)}</Text>)}
+            {d.dueDate ? metaRow('inv.due', <Text style={s.metaValue}>{formatDate(d.dueDate)}</Text>) : null}
+            {metaRow('inv.statusLabel', <Text style={s.metaStatus}>{tr(`inv.status.${d.display}`)}</Text>)}
+          </View>
         </View>
 
-        {/* Bill to */}
-        <View style={s.billto}>
-          <Text style={s.label}>{tr('inv.billTo')}</Text>
-          <Text style={s.clientName}>{rtlText(d.client.name) || '—'}</Text>
-          {d.client.phone ? <Text style={s.muted}>{d.client.phone}</Text> : null}
-          {d.client.address ? <Text style={s.muted}>{rtlText(d.client.address)}</Text> : null}
-          {d.client.email ? <Text style={s.muted}>{d.client.email}</Text> : null}
+        {/* 2. Accent rule */}
+        <View style={s.rule} />
+
+        {/* 3. Parties: From | Bill to (equal columns, same top alignment) */}
+        <View style={s.parties}>
+          <View style={s.party}>
+            <Text style={s.label}>{tr('inv.from')}</Text>
+            <Text style={s.partyName}>{rtlText(d.business.name)}</Text>
+            {d.business.address ? <Text style={s.muted}>{rtlText(d.business.address)}</Text> : null}
+            {d.business.phone ? <Text style={s.muted}>{d.business.phone}</Text> : null}
+          </View>
+          <View style={s.partyGap} />
+          <View style={s.party}>
+            <Text style={s.label}>{tr('inv.billTo')}</Text>
+            <Text style={s.partyName}>{rtlText(d.client.name) || '—'}</Text>
+            {d.client.phone ? <Text style={s.muted}>{d.client.phone}</Text> : null}
+            {d.client.address ? <Text style={s.muted}>{rtlText(d.client.address)}</Text> : null}
+            {d.client.email ? <Text style={s.muted}>{d.client.email}</Text> : null}
+          </View>
         </View>
 
-        {/* Items */}
-        <View style={{ marginTop: 14 }}>
+        {/* 4. Items table (starts at a fixed y; min 6 rows, padded with zebra) */}
+        <View>
           <View style={s.th}>
             <Text style={s.hIdx}>#</Text>
             <Text style={s.hDesc}>{tr('inv.itemDesc')}</Text>
@@ -250,65 +259,76 @@ function InvoiceDoc({ d }: { d: InvoiceHtmlData }) {
               <Text style={s.cNum}>{amt(lineTotal(it))}</Text>
             </View>
           ))}
+          {Array.from({ length: padRows }).map((_, k) => {
+            const i = d.items.length + k;
+            return (
+              <View style={i % 2 === 1 ? [s.tr, s.trAlt] : s.tr} key={`pad-${k}`}>
+                <Text style={s.cIdx}> </Text>
+              </View>
+            );
+          })}
         </View>
 
-        {/* Totals */}
-        <View style={s.totals}>
-          <View style={s.tline}>
-            <Text style={s.muted}>{tr('inv.subtotal')}</Text>
-            <Text>{money(d.subtotal)}</Text>
+        {/* 5+6. Side box (payment / notes) | totals — same row, balanced */}
+        <View style={s.lower}>
+          <View style={s.sideBox}>
+            {d.business.paymentInstructions ? (
+              <>
+                <Text style={s.label}>{tr('inv.paymentInstructions')}</Text>
+                <Text style={s.sideBody}>{rtlText(d.business.paymentInstructions)}</Text>
+              </>
+            ) : d.notes ? (
+              <>
+                <Text style={s.label}>{tr('inv.notes')}</Text>
+                <Text style={s.sideBody}>{rtlText(d.notes)}</Text>
+              </>
+            ) : null}
           </View>
-          {d.discount > 0 ? (
+          <View style={s.totals}>
             <View style={s.tline}>
-              <Text style={s.muted}>{tr('inv.discount')}</Text>
-              <Text>− {money(d.discount)}</Text>
+              <Text style={s.muted}>{tr('inv.subtotal')}</Text>
+              <Text>{money(d.subtotal)}</Text>
             </View>
-          ) : null}
-
-          {hasPayment ? (
-            <>
-              <View style={[s.tline, s.tstrong]}>
-                <Text>{tr('inv.total')}</Text>
-                <Text>{money(d.total)}</Text>
-              </View>
-              {equiv ? <Text style={s.equiv}>{equiv}</Text> : null}
+            {d.discount > 0 ? (
               <View style={s.tline}>
-                <Text style={s.muted}>{tr('inv.paidToDate')}</Text>
-                <Text>{money(d.paid)}</Text>
+                <Text style={s.muted}>{tr('inv.discount')}</Text>
+                <Text>− {money(d.discount)}</Text>
               </View>
-              <View style={s.grand}>
-                <Text style={s.grandText}>{tr('inv.balanceDue')}</Text>
-                <Text style={s.grandText}>{money(balance)}</Text>
-              </View>
-            </>
-          ) : (
-            <>
+            ) : null}
+            {hasPayment ? (
+              <>
+                <View style={[s.tline, s.tstrong]}>
+                  <Text>{tr('inv.total')}</Text>
+                  <Text>{money(d.total)}</Text>
+                </View>
+                <View style={s.tline}>
+                  <Text style={s.muted}>{tr('inv.paidToDate')}</Text>
+                  <Text>{money(d.paid)}</Text>
+                </View>
+                <View style={s.grand}>
+                  <Text style={s.grandText}>{tr('inv.balanceDue')}</Text>
+                  <Text style={s.grandText}>{money(balance)}</Text>
+                </View>
+              </>
+            ) : (
               <View style={s.grand}>
                 <Text style={s.grandText}>{tr('inv.total')}</Text>
                 <Text style={s.grandText}>{money(d.total)}</Text>
               </View>
-              {equiv ? <Text style={s.equiv}>{equiv}</Text> : null}
-            </>
-          )}
+            )}
+            {equiv ? <Text style={s.equiv}>{equiv}</Text> : null}
+          </View>
         </View>
 
-        {d.notes ? <Text style={s.notes}>{rtlText(d.notes)}</Text> : null}
-        {d.business.paymentInstructions ? (
-          <View style={s.pay}>
-            <Text style={s.label}>{tr('inv.paymentInstructions')}</Text>
-            <Text style={{ textAlign: align, marginTop: 3 }}>{rtlText(d.business.paymentInstructions)}</Text>
-          </View>
-        ) : null}
-
-        {/* Footer (fixed to the page bottom): note + Page X of N + accent line */}
-        <View style={s.footer} fixed>
-          {d.business.footer ? <Text style={s.footNote}>{rtlText(d.business.footer)}</Text> : null}
+        {/* 7. Footer pinned to the bottom: note | page, accent line above */}
+        <View style={s.spacer} />
+        <View style={s.footer}>
+          <Text style={s.footNote}>{d.business.footer ? rtlText(d.business.footer) : ' '}</Text>
           <Text
             style={s.footPage}
             render={({ pageNumber, totalPages }) =>
               interpolate(t(d.locale, 'inv.pageOf'), { n: String(pageNumber), total: String(totalPages) })
             }
-            fixed
           />
         </View>
       </Page>

@@ -1,7 +1,7 @@
 // Pure invoice → HTML. Feeds the public page and the Settings live preview
-// (the PDF is rendered separately by lib/invoice-pdf.tsx to the same design).
-// RTL-correct for Arabic/Kurdish (dir on <html>), Western digits throughout.
-// Google Fonts (Noto) so Arabic/Kurdish shape correctly in any browser.
+// (the PDF is rendered separately by lib/invoice-pdf.tsx to the same grid).
+// RTL-correct for Arabic/Kurdish via dir on <html> + logical CSS (start/end);
+// Western digits throughout. Google Fonts (Noto) so Arabic/Kurdish shape.
 
 import { t, dir, interpolate, type Locale } from '@/lib/i18n';
 import { formatMoney, type Currency } from '@/lib/money';
@@ -21,7 +21,7 @@ export interface InvoiceHtmlData {
   total: number;
   paid: number;
   notes: string | null;
-  /** Accent colour for table header, lines and the amount bar. */
+  /** Accent colour for header rule, table header and the amount bar. */
   accent?: string | null;
   /** Business USD↔IQD rate, for the small equivalent under the total. */
   usdIqdRate?: number;
@@ -37,6 +37,8 @@ export interface InvoiceHtmlData {
   };
   client: { name: string | null; phone: string | null; address?: string | null; email: string | null };
 }
+
+const MIN_ROWS = 6;
 
 const STATUS_COLOR: Record<DisplayStatus, string> = {
   draft: '#64748b',
@@ -64,7 +66,10 @@ export function renderInvoiceHtml(d: InvoiceHtmlData): string {
   const equiv = altCurrency(d.total, d.currency, d.usdIqdRate ?? 0);
   const statusColor = STATUS_COLOR[d.display];
 
-  const rows = d.items
+  const metaRow = (label: string, value: string, valueClass = 'mval') =>
+    `<div class="mrow"><span class="mlabel">${esc(label)}</span><span class="${valueClass}">${esc(value)}</span></div>`;
+
+  const itemRows = d.items
     .map(
       (it, i) => `
       <tr>
@@ -76,23 +81,35 @@ export function renderInvoiceHtml(d: InvoiceHtmlData): string {
       </tr>`
     )
     .join('');
+  const padCount = Math.max(0, MIN_ROWS - d.items.length);
+  const padRows = Array.from({ length: padCount })
+    .map(() => `<tr class="pad"><td class="idx">&nbsp;</td><td></td><td></td><td></td><td></td></tr>`)
+    .join('');
 
-  const grandRow = (labelKey: string, value: string) =>
-    `<div class="grand"><span>${esc(tr(labelKey))}</span><span>${value}</span></div>`;
+  const tline = (label: string, value: string, cls = '') =>
+    `<div class="tline ${cls}"><span class="tlabel">${esc(label)}</span><span>${esc(value)}</span></div>`;
+  const grand = (label: string, value: string) =>
+    `<div class="grand"><span>${esc(label)}</span><span>${esc(value)}</span></div>`;
 
   const totalsInner = hasPayment
     ? `
-      <div class="tline"><span class="muted">${esc(tr('inv.subtotal'))}</span><span>${money(d.subtotal)}</span></div>
-      ${d.discount > 0 ? `<div class="tline"><span class="muted">${esc(tr('inv.discount'))}</span><span>− ${money(d.discount)}</span></div>` : ''}
-      <div class="tline strong"><span>${esc(tr('inv.total'))}</span><span>${money(d.total)}</span></div>
-      ${equiv ? `<div class="equiv">${esc(equiv)}</div>` : ''}
-      <div class="tline"><span class="muted">${esc(tr('inv.paidToDate'))}</span><span>${money(d.paid)}</span></div>
-      ${grandRow('inv.balanceDue', money(balance))}`
+      ${tline(tr('inv.subtotal'), money(d.subtotal))}
+      ${d.discount > 0 ? tline(tr('inv.discount'), `− ${money(d.discount)}`) : ''}
+      ${tline(tr('inv.total'), money(d.total), 'strong')}
+      ${tline(tr('inv.paidToDate'), money(d.paid))}
+      ${grand(tr('inv.balanceDue'), money(balance))}
+      ${equiv ? `<div class="equiv">${esc(equiv)}</div>` : ''}`
     : `
-      <div class="tline"><span class="muted">${esc(tr('inv.subtotal'))}</span><span>${money(d.subtotal)}</span></div>
-      ${d.discount > 0 ? `<div class="tline"><span class="muted">${esc(tr('inv.discount'))}</span><span>− ${money(d.discount)}</span></div>` : ''}
-      ${grandRow('inv.total', money(d.total))}
+      ${tline(tr('inv.subtotal'), money(d.subtotal))}
+      ${d.discount > 0 ? tline(tr('inv.discount'), `− ${money(d.discount)}`) : ''}
+      ${grand(tr('inv.total'), money(d.total))}
       ${equiv ? `<div class="equiv">${esc(equiv)}</div>` : ''}`;
+
+  const sideBox = d.business.paymentInstructions
+    ? `<div class="sidebox"><div class="mlabel">${esc(tr('inv.paymentInstructions'))}</div><div class="sidebody">${esc(d.business.paymentInstructions)}</div></div>`
+    : d.notes
+      ? `<div class="sidebox"><div class="mlabel">${esc(tr('inv.notes'))}</div><div class="sidebody">${esc(d.notes)}</div></div>`
+      : `<div class="sidebox blank"></div>`;
 
   return `<!DOCTYPE html>
 <html lang="${d.locale}" dir="${rtl ? 'rtl' : 'ltr'}">
@@ -104,89 +121,122 @@ export function renderInvoiceHtml(d: InvoiceHtmlData): string {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;600;700&family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
+  :root { --accent: ${accent}; --status: ${statusColor}; }
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
+  html, body { margin: 0; padding: 0; background: #f1f5f9; }
   body {
     font-family: 'Noto Sans', 'Noto Naskh Arabic', system-ui, -apple-system, sans-serif;
-    color: #0f172a; background: #fff; font-size: 13px; line-height: 1.5;
+    color: #0f172a; font-size: 12.5px; line-height: 1.5;
   }
-  .sheet { max-width: 760px; margin: 0 auto; padding: 40px 40px 28px; }
-  .top { display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; }
-  .brand { display: flex; gap: 12px; align-items: flex-start; }
-  .logo { height: 60px; width: auto; max-width: 160px; border-radius: 8px; object-fit: contain; }
-  .biz-name { font-size: 19px; font-weight: 700; color: ${accent}; margin-bottom: 2px; }
-  .muted { color: #64748b; font-size: 12px; }
-  .doc { text-align: ${rtl ? 'left' : 'right'}; min-width: 190px; }
-  .stamp {
-    display: inline-block; padding: 3px 10px; border: 2px solid ${statusColor}; color: ${statusColor};
-    border-radius: 6px; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  .sheet {
+    max-width: 780px; min-height: 1080px; margin: 16px auto; background: #fff;
+    padding: 32px 36px 24px; display: flex; flex-direction: column;
+    box-shadow: 0 1px 6px rgba(15,23,42,.08);
   }
-  .inv-word { font-size: 30px; font-weight: 800; letter-spacing: .04em; color: #0f172a; margin: 8px 0 2px; text-transform: uppercase; }
-  .inv-no { font-size: 14px; font-weight: 700; color: ${accent}; margin-bottom: 6px; }
-  .docline { font-size: 12px; color: #334155; }
-  .docline .k { color: #94a3b8; }
-  .label { font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
-  .billto { margin: 26px 0 10px; }
-  .billto .name { font-weight: 700; font-size: 14px; margin-top: 2px; }
-  table { width: 100%; border-collapse: collapse; margin-top: 6px; }
-  thead th {
-    background: ${accent}; color: #fff; font-size: 11px; font-weight: 700; padding: 8px 8px;
-    text-align: ${rtl ? 'right' : 'left'};
-  }
+  .mlabel { font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+  .muted { color: #64748b; font-size: 11px; margin-top: 1px; }
+
+  /* 1. Header band (fixed height) */
+  .header { min-height: 150px; display: flex; justify-content: space-between; gap: 24px; }
+  .brand { flex: 1 1 0; min-width: 0; }
+  .logo { max-height: 48px; max-width: 150px; object-fit: contain; display: block; margin-bottom: 8px; }
+  .biz-name { font-size: 17px; font-weight: 700; color: var(--accent); margin-bottom: 2px; }
+  .doc { width: 240px; }
+  .inv-word { font-size: 28px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; text-align: end; margin-bottom: 8px; }
+  .meta { }
+  .mrow { display: flex; justify-content: space-between; gap: 10px; margin-top: 3px; }
+  .mrow .mval { font-size: 12.5px; text-align: end; }
+  .mrow .mstatus { font-size: 12.5px; font-weight: 700; text-transform: uppercase; color: var(--status); text-align: end; }
+  /* Keep numbers/dates/amounts reading LTR even inside an RTL page. */
+  .mrow .mval, .tline > span:last-child, .grand > span:last-child, .equiv, td.num { unicode-bidi: plaintext; }
+
+  /* 2. Accent rule */
+  .rule { height: 2px; background: var(--accent); margin: 8px 0 16px; }
+
+  /* 3. Parties */
+  .parties { min-height: 92px; display: flex; gap: 24px; }
+  .party { flex: 1 1 0; min-width: 0; }
+  .party .name { font-weight: 700; font-size: 13px; margin: 3px 0 1px; }
+
+  /* 4. Items */
+  table { width: 100%; border-collapse: collapse; }
+  thead th { background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; padding: 7px 8px; text-align: start; }
   thead th.idx { width: 26px; text-align: center; }
-  thead th.num { text-align: ${rtl ? 'left' : 'right'}; white-space: nowrap; }
-  tbody td { padding: 8px 8px; border-bottom: 1px solid #eef2f7; vertical-align: top; }
+  thead th.num { text-align: end; white-space: nowrap; }
+  tbody td { padding: 7px 8px; border-bottom: 1px solid #eef2f7; height: 20px; }
   tbody tr:nth-child(even) td { background: #f8fafc; }
   td.idx { width: 26px; text-align: center; color: #94a3b8; }
-  td.num { text-align: ${rtl ? 'left' : 'right'}; white-space: nowrap; }
-  .totals { margin-${rtl ? 'right' : 'left'}: auto; margin-top: 16px; width: 300px; }
+  td.num { text-align: end; white-space: nowrap; }
+  td.desc { color: #334155; }
+
+  /* 5+6. Lower row: side box | totals */
+  .lower { display: flex; gap: 16px; align-items: flex-start; margin-top: 24px; }
+  .sidebox { flex: 1 1 0; min-width: 0; padding: 12px 14px; background: #f8fafc; border-radius: 8px; border-inline-start: 3px solid var(--accent); }
+  .sidebox.blank { background: transparent; border: 0; }
+  .sidebody { margin-top: 4px; color: #475569; white-space: pre-wrap; }
+  .totals { width: 40%; max-width: 300px; }
   .tline { display: flex; justify-content: space-between; padding: 4px 2px; }
+  .tline .tlabel { color: #64748b; }
   .tline.strong { font-weight: 700; border-top: 1px solid #e2e8f0; margin-top: 4px; padding-top: 8px; }
-  .equiv { text-align: ${rtl ? 'left' : 'right'}; color: #94a3b8; font-size: 11px; padding: 0 2px 2px; }
-  .grand {
-    display: flex; justify-content: space-between; align-items: center;
-    background: ${accent}; color: #fff; margin-top: 8px; padding: 11px 12px;
-    border-radius: 8px; font-size: 17px; font-weight: 700;
+  .tline.strong .tlabel { color: inherit; }
+  .grand { display: flex; justify-content: space-between; align-items: center; background: var(--accent); color: #fff; margin-top: 8px; padding: 10px 12px; border-radius: 8px; font-size: 15px; font-weight: 700; }
+  .equiv { text-align: end; color: #94a3b8; font-size: 11px; margin-top: 6px; }
+
+  /* 7. Footer */
+  .footer { margin-top: auto; border-top: 2px solid var(--accent); padding-top: 8px; display: flex; justify-content: space-between; gap: 12px; }
+  .footer .note { color: #334155; font-size: 11px; }
+  .footer .page { color: #94a3b8; font-size: 10px; white-space: nowrap; }
+
+  @media print {
+    html, body { background: #fff; }
+    .sheet { box-shadow: none; margin: 0; max-width: none; min-height: 100vh; }
   }
-  .pay { margin-top: 22px; padding: 12px 14px; background: #f8fafc; border-radius: 10px; border-inline-start: 3px solid ${accent}; }
-  .pay .body { margin-top: 4px; white-space: pre-wrap; }
-  .notes { margin-top: 16px; color: #475569; }
-  .footer { margin-top: 26px; border-top: 2px solid ${accent}; padding-top: 10px; text-align: center; }
-  .footer .note { color: #334155; font-size: 12px; }
-  .footer .page { color: #94a3b8; font-size: 11px; margin-top: 4px; }
-  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .sheet { padding: 0; } }
 </style>
 </head>
 <body>
   <div class="sheet">
-    <div class="top">
+    <!-- 1. Header band -->
+    <div class="header">
       <div class="brand">
         ${d.business.logoUrl ? `<img class="logo" src="${esc(d.business.logoUrl)}" alt="">` : ''}
-        <div>
-          <div class="biz-name">${esc(d.business.name)}</div>
-          ${d.business.address ? `<div class="muted">${esc(d.business.address)}</div>` : ''}
-          ${d.business.phone ? `<div class="muted">${esc(d.business.phone)}</div>` : ''}
-          ${d.business.email ? `<div class="muted">${esc(d.business.email)}</div>` : ''}
-          ${d.business.taxNumber ? `<div class="muted">${esc(tr('inv.taxNumber'))}: ${esc(d.business.taxNumber)}</div>` : ''}
-        </div>
+        <div class="biz-name">${esc(d.business.name)}</div>
+        ${d.business.address ? `<div class="muted">${esc(d.business.address)}</div>` : ''}
+        ${d.business.phone ? `<div class="muted">${esc(d.business.phone)}</div>` : ''}
+        ${d.business.email ? `<div class="muted">${esc(d.business.email)}</div>` : ''}
+        ${d.business.taxNumber ? `<div class="muted">${esc(tr('inv.taxNumber'))}: ${esc(d.business.taxNumber)}</div>` : ''}
       </div>
       <div class="doc">
-        <div class="stamp">${esc(tr(`inv.status.${d.display}`))}</div>
         <div class="inv-word">${esc(tr('inv.invoiceNo'))}</div>
-        <div class="inv-no">${esc(d.number)}</div>
-        <div class="docline"><span class="k">${esc(tr('inv.date'))}:</span> ${esc(formatDate(d.issueDate))}</div>
-        ${d.dueDate ? `<div class="docline"><span class="k">${esc(tr('inv.due'))}:</span> ${esc(formatDate(d.dueDate))}</div>` : ''}
+        <div class="meta">
+          ${metaRow(tr('inv.numberLabel'), d.number)}
+          ${metaRow(tr('inv.date'), formatDate(d.issueDate))}
+          ${d.dueDate ? metaRow(tr('inv.due'), formatDate(d.dueDate)) : ''}
+          ${metaRow(tr('inv.statusLabel'), tr(`inv.status.${d.display}`), 'mstatus')}
+        </div>
       </div>
     </div>
 
-    <div class="billto">
-      <div class="label">${esc(tr('inv.billTo'))}</div>
-      <div class="name">${esc(d.client.name) || '—'}</div>
-      ${d.client.phone ? `<div class="muted">${esc(d.client.phone)}</div>` : ''}
-      ${d.client.address ? `<div class="muted">${esc(d.client.address)}</div>` : ''}
-      ${d.client.email ? `<div class="muted">${esc(d.client.email)}</div>` : ''}
+    <!-- 2. Accent rule -->
+    <div class="rule"></div>
+
+    <!-- 3. Parties -->
+    <div class="parties">
+      <div class="party">
+        <div class="mlabel">${esc(tr('inv.from'))}</div>
+        <div class="name">${esc(d.business.name)}</div>
+        ${d.business.address ? `<div class="muted">${esc(d.business.address)}</div>` : ''}
+        ${d.business.phone ? `<div class="muted">${esc(d.business.phone)}</div>` : ''}
+      </div>
+      <div class="party">
+        <div class="mlabel">${esc(tr('inv.billTo'))}</div>
+        <div class="name">${esc(d.client.name) || '—'}</div>
+        ${d.client.phone ? `<div class="muted">${esc(d.client.phone)}</div>` : ''}
+        ${d.client.address ? `<div class="muted">${esc(d.client.address)}</div>` : ''}
+        ${d.client.email ? `<div class="muted">${esc(d.client.email)}</div>` : ''}
+      </div>
     </div>
 
+    <!-- 4. Items -->
     <table>
       <thead>
         <tr>
@@ -197,20 +247,18 @@ export function renderInvoiceHtml(d: InvoiceHtmlData): string {
           <th class="num">${esc(tr('inv.lineTotal'))} (${esc(cur)})</th>
         </tr>
       </thead>
-      <tbody>${rows}</tbody>
+      <tbody>${itemRows}${padRows}</tbody>
     </table>
 
-    <div class="totals">${totalsInner}</div>
+    <!-- 5+6. Side box | totals -->
+    <div class="lower">
+      ${sideBox}
+      <div class="totals">${totalsInner}</div>
+    </div>
 
-    ${d.notes ? `<div class="notes">${esc(d.notes)}</div>` : ''}
-    ${
-      d.business.paymentInstructions
-        ? `<div class="pay"><div class="label">${esc(tr('inv.paymentInstructions'))}</div><div class="body">${esc(d.business.paymentInstructions)}</div></div>`
-        : ''
-    }
-
+    <!-- 7. Footer -->
     <div class="footer">
-      ${d.business.footer ? `<div class="note">${esc(d.business.footer)}</div>` : ''}
+      <div class="note">${d.business.footer ? esc(d.business.footer) : ''}</div>
       <div class="page">${esc(interpolate(tr('inv.pageOf'), { n: '1', total: '1' }))}</div>
     </div>
   </div>

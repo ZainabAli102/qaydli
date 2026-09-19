@@ -285,8 +285,8 @@ function InvoicePreview({ html }: { html: string }) {
     return () => ro.disconnect();
   }, []);
 
-  const LOGICAL = 720;
-  const H = 940;
+  const LOGICAL = 800; // fits the 780px sheet + margins
+  const H = 1160; // A4-ratio height so the whole invoice (incl. footer) shows
   const scale = w / LOGICAL;
 
   return (
