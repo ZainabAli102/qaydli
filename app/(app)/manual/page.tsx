@@ -41,7 +41,7 @@ export default async function ManualPage() {
     type: 'expense',
     fromMemory: false,
     conf: { vendor: 0, date: 0, total: 0, currency: 0 },
-    manual: true,
+    mode: 'manual',
   };
 
   return <ReviewForm initial={initial} />;

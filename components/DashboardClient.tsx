@@ -8,21 +8,8 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { BottomNav } from '@/components/BottomNav';
 import { signOut } from '@/app/(app)/scan/actions';
 import { formatIqd, formatUsd, fromIqd } from '@/lib/money';
+import { monthLabel } from '@/lib/month-label';
 import type { TxnRow } from '@/lib/queries';
-
-const LOCALE_TAG: Record<string, string> = { en: 'en', ar: 'ar-IQ', ckb: 'ckb-IQ' };
-
-function monthLabel(month: string, locale: string): string {
-  const [y, m] = month.split('-').map(Number);
-  try {
-    return new Intl.DateTimeFormat(LOCALE_TAG[locale] ?? 'en', {
-      month: 'long',
-      year: 'numeric',
-    }).format(new Date(Date.UTC(y, m - 1, 1)));
-  } catch {
-    return month;
-  }
-}
 
 export function DashboardClient(props: {
   businessName: string;
@@ -188,9 +175,14 @@ export function DashboardClient(props: {
         <section className="mb-4">
           <div className="mb-2 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-700">{t('dash.recent')}</h2>
-            <a href={`/api/export?m=${props.month}`} className="text-sm font-medium text-brand">
-              {t('dash.export')}
-            </a>
+            <div className="flex items-center gap-3">
+              <Link href={`/transactions?m=${props.allTime ? thisMonth : props.month}`} className="text-sm font-medium text-brand">
+                {t('txn.viewAll')}
+              </Link>
+              <a href={`/api/export?m=${props.allTime ? thisMonth : props.month}`} className="text-sm font-medium text-brand">
+                {t('dash.export')}
+              </a>
+            </div>
           </div>
           {props.transactions.length === 0 ? (
             <p className="rounded-lg border border-dashed border-slate-200 p-4 text-center text-sm text-slate-400">
@@ -198,21 +190,23 @@ export function DashboardClient(props: {
             </p>
           ) : (
             <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
-              {props.transactions.map((tx) => (
-                <li key={tx.id} className="flex items-center justify-between px-3 py-2.5">
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-slate-800">{tx.vendor || t('review.vendor')}</p>
-                    <p className="text-xs text-slate-500">
-                      {t(`cat.${tx.category ?? 'other'}`)} · {tx.occurred_on ?? ''}
-                    </p>
-                  </div>
-                  <div className="shrink-0 text-end">
-                    <p className={`font-semibold ${tx.direction === 'in' ? 'text-green-600' : 'text-slate-800'}`}>
-                      {tx.direction === 'in' ? '+' : '−'}
-                      {formatIqd(tx.amount)}
-                    </p>
-                    <p className="text-xs text-slate-400">{formatUsd(fromIqd(tx.amount, 'USD', rate))}</p>
-                  </div>
+              {props.transactions.slice(0, 8).map((tx) => (
+                <li key={tx.id}>
+                  <Link href={`/transactions/${tx.id}`} className="flex items-center justify-between px-3 py-2.5">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-slate-800">{tx.vendor || t('review.vendor')}</p>
+                      <p className="text-xs text-slate-500">
+                        {t(`cat.${tx.category ?? 'other'}`)} · {tx.occurred_on ?? ''}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-end">
+                      <p className={`font-semibold ${tx.direction === 'in' ? 'text-green-600' : 'text-slate-800'}`}>
+                        {tx.direction === 'in' ? '+' : '−'}
+                        {formatIqd(tx.amount)}
+                      </p>
+                      <p className="text-xs text-slate-400">{formatUsd(fromIqd(tx.amount, 'USD', rate))}</p>
+                    </div>
+                  </Link>
                 </li>
               ))}
             </ul>

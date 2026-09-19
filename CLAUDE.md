@@ -41,7 +41,11 @@ app/
   onboarding/page.tsx   Guard -> OnboardingForm (one-screen business setup)
   scan/page.tsx         Guard -> ScanClient (minimal upload page)
   api/scan/route.ts     POST: store image -> extract() -> persist -> ReceiptResult
-components/             LocaleProvider, LanguageSwitcher, ScanClient, OnboardingForm, ServiceWorker
+  (app)/dashboard, transactions (list + [id] detail/edit/delete), manual,
+        receipts (archive + [id] photo), upgrade — all under the (app) auth guard
+  api/export            CSV of a month; api/receipts/download zips photos + CSV
+components/             LocaleProvider, LanguageSwitcher, ScanClient, ReviewForm,
+        DashboardClient, TransactionsClient, ReceiptsClient, BottomNav, …
 lib/
   i18n.ts               en (default), ar, ckb dictionaries + dir()
   session.ts            getSessionContext() — user + business on the server

@@ -10,10 +10,11 @@ export function BottomNav() {
   const path = usePathname();
   const items = [
     { href: '/dashboard', key: 'nav.dashboard', icon: '📊' },
+    { href: '/receipts', key: 'nav.receipts', icon: '🧾' },
     { href: '/scan', key: 'nav.scan', icon: '📷' },
   ];
   return (
-    <nav className="sticky bottom-0 z-10 grid grid-cols-2 border-t border-slate-200 bg-white">
+    <nav className="sticky bottom-0 z-10 grid grid-cols-3 border-t border-slate-200 bg-white">
       {items.map((it) => {
         const active = path === it.href || path.startsWith(it.href + '/');
         return (

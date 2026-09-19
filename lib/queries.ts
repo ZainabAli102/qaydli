@@ -6,6 +6,7 @@ import type { Category, PaymentMethod } from '@/lib/domain';
 
 export interface TxnRow {
   id: string;
+  document_id: string | null;
   vendor: string | null;
   category: Category | null;
   payment_method: PaymentMethod | null;
@@ -41,12 +42,31 @@ export async function getVendorMemory(
   };
 }
 
+export interface TxnFull extends TxnRow {
+  document_id: string | null;
+}
+
+/** A single transaction (RLS-scoped), including its document link. */
+export async function getTransaction(
+  supabase: SupabaseClient,
+  id: string
+): Promise<TxnFull | null> {
+  const { data } = await supabase
+    .from('transactions')
+    .select(
+      'id, document_id, vendor, category, payment_method, direction, amount, original_amount, original_currency, occurred_on, notes, created_at'
+    )
+    .eq('id', id)
+    .maybeSingle();
+  return (data as TxnFull) ?? null;
+}
+
 /** All transactions in the business, newest first (for the "All time" view). */
 export async function getAllTransactions(supabase: SupabaseClient): Promise<TxnRow[]> {
   const { data } = await supabase
     .from('transactions')
     .select(
-      'id, vendor, category, payment_method, direction, amount, original_amount, original_currency, occurred_on, notes, created_at'
+      'id, document_id, vendor, category, payment_method, direction, amount, original_amount, original_currency, occurred_on, notes, created_at'
     )
     .order('occurred_on', { ascending: false })
     .order('created_at', { ascending: false });
@@ -62,7 +82,7 @@ export async function getMonthTransactions(
   const { data } = await supabase
     .from('transactions')
     .select(
-      'id, vendor, category, payment_method, direction, amount, original_amount, original_currency, occurred_on, notes, created_at'
+      'id, document_id, vendor, category, payment_method, direction, amount, original_amount, original_currency, occurred_on, notes, created_at'
     )
     .gte('occurred_on', monthStart)
     .lt('occurred_on', nextMonthStart)
