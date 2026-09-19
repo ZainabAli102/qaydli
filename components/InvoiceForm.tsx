@@ -99,7 +99,11 @@ export function InvoiceForm(props: {
     }
     if (d.currency) setCurrency(d.currency);
     if (d.notes) setNotes(d.notes);
-    if (d.client_name && !clientId) {
+    // Memory resolved the spoken name to an existing client → pick it.
+    if (d.client_id && props.clients.some((c) => c.id === d.client_id)) {
+      setAdding(false);
+      setClientId(d.client_id);
+    } else if (d.client_name && !clientId) {
       setAdding(true);
       setNewName(d.client_name);
     }

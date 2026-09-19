@@ -4,6 +4,7 @@
 
 import OpenAI from 'openai';
 import { normalizeDigits } from '@/lib/engine';
+import { hintsSuffix, type ParseHints } from '@/lib/invoice-parse';
 import { CATEGORIES, PAYMENT_METHODS, isCategory, type Category, type PaymentMethod } from '@/lib/domain';
 
 export interface ParsedExpenseDraft {
@@ -85,7 +86,9 @@ export function normalizeExpenseDraft(raw: unknown): ParsedExpenseDraft {
 
 export async function parseExpenseDraft(
   text: string,
-  opts: { apiKey?: string; model?: string; todayISO: string } = { todayISO: new Date().toISOString().slice(0, 10) }
+  opts: { apiKey?: string; model?: string; todayISO: string; hints?: ParseHints } = {
+    todayISO: new Date().toISOString().slice(0, 10),
+  }
 ): Promise<ParsedExpenseDraft> {
   const apiKey = opts.apiKey ?? process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error('OPENAI_API_KEY is not set');
@@ -98,7 +101,7 @@ export async function parseExpenseDraft(
     ...(isReasoning ? {} : { temperature: 0 }),
     response_format: { type: 'json_object' },
     messages: [
-      { role: 'system', content: buildSystem(opts.todayISO) },
+      { role: 'system', content: buildSystem(opts.todayISO) + hintsSuffix(opts.hints) },
       { role: 'user', content: text.slice(0, 2000) },
     ],
   });

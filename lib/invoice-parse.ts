@@ -13,6 +13,29 @@ export interface ParsedInvoiceDraft {
   due_in_days: number | null;
   due_date: string | null; // ISO 'YYYY-MM-DD'
   notes: string | null;
+  /** Resolved by the route from client memory (not the model). */
+  client_id?: string | null;
+}
+
+export interface ParseHints {
+  names?: string[]; // known client/vendor names to prefer for spelling
+  items?: Array<{ description: string; unit_price: number }>; // known item prices
+}
+
+/** Append known-names / known-item hints to a parser system prompt. */
+export function hintsSuffix(h?: ParseHints): string {
+  if (!h) return '';
+  let s = '';
+  if (h.names?.length) {
+    s += `\n\nKnown names in this business (prefer these spellings when the spoken name is close): ${h.names.slice(0, 60).join(', ')}.`;
+  }
+  if (h.items?.length) {
+    s += `\nKnown item prices (use as a hint when the same item recurs): ${h.items
+      .slice(0, 40)
+      .map((i) => `${i.description}=${Math.round(i.unit_price)}`)
+      .join('; ')}.`;
+  }
+  return s;
 }
 
 const SYSTEM = `You turn a short business instruction into a draft sales invoice as STRICT JSON.
@@ -87,7 +110,7 @@ export function normalizeDraft(raw: unknown): ParsedInvoiceDraft {
 
 export async function parseInvoiceDraft(
   text: string,
-  opts: { apiKey?: string; model?: string } = {}
+  opts: { apiKey?: string; model?: string; hints?: ParseHints } = {}
 ): Promise<ParsedInvoiceDraft> {
   const apiKey = opts.apiKey ?? process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error('OPENAI_API_KEY is not set');
@@ -100,7 +123,7 @@ export async function parseInvoiceDraft(
     ...(isReasoning ? {} : { temperature: 0 }),
     response_format: { type: 'json_object' },
     messages: [
-      { role: 'system', content: SYSTEM },
+      { role: 'system', content: SYSTEM + hintsSuffix(opts.hints) },
       { role: 'user', content: text.slice(0, 2000) },
     ],
   });

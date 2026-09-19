@@ -3,6 +3,7 @@ import { getSessionContext } from '@/lib/session';
 import { createClient } from '@/lib/supabase/server';
 import { getVendorMemory } from '@/lib/queries';
 import { resolveCategory, type PaymentMethod } from '@/lib/domain';
+import { lookupCategoryVocab, type VocabLike } from '@/lib/memory';
 import { ReviewForm, type ReviewInitial } from '@/components/ReviewForm';
 import type { ReceiptResult } from '@/lib/engine/types';
 
@@ -39,10 +40,22 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
   const vendor = val(r.vendor, '') || val(r.vendor_latin, '');
   const memory = await getVendorMemory(supabase, vendor || null);
 
-  // Category: vendor memory → model suggestion → keyword guess → 'other'.
-  // Every source is validated, so a retired/misspelled slug never blanks it.
+  // The owner's own category words (learned from past corrections) apply before
+  // the model's guess. Match on the vendor first, then vendor + notes.
+  const { data: catVocab } = await supabase
+    .from('category_vocab')
+    .select('phrase_norm, category, uses')
+    .order('uses', { ascending: false })
+    .limit(300);
+  const vocab = (catVocab as VocabLike[]) ?? [];
+  const learnedCategory =
+    lookupCategoryVocab(vendor, vocab) ?? lookupCategoryVocab(`${vendor} ${val(r.notes, '')}`, vocab);
+
+  // Category: vendor memory → learned vocabulary → model suggestion → keyword
+  // guess → 'other'. Every source is validated, so a retired/misspelled slug
+  // never blanks it.
   const cat = resolveCategory({
-    memory: memory?.category,
+    memory: memory?.category ?? learnedCategory,
     model: r.category?.value,
     text: `${vendor} ${val(r.notes, '')}`,
   });

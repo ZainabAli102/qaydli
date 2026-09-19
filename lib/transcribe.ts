@@ -20,6 +20,8 @@ export interface AudioInput {
   filename: string;
   contentType: string;
   locale: string;
+  /** Per-business word list (vendor/client/item names) to bias transcription. */
+  keyterms?: string[];
 }
 
 /** ElevenLabs Scribe. Throws on any non-2xx or missing key (caller may fall back). */
@@ -34,6 +36,12 @@ export async function transcribeElevenLabs(input: AudioInput): Promise<string> {
   fd.append('file', new Blob([bytes], { type: input.contentType }), input.filename);
   fd.append('model_id', model);
   if (lang) fd.append('language_code', lang);
+  // Keyterm biasing is opt-in (ELEVENLABS_BIASING): the field is only accepted on
+  // some models/plans, so we gate it at the caller and rely on the OpenAI fallback
+  // if a request is ever rejected. Sent as a JSON array of terms.
+  if (input.keyterms?.length) {
+    fd.append('keyterms', JSON.stringify(input.keyterms.slice(0, 100)));
+  }
 
   const res = await fetch(ELEVENLABS_URL, {
     method: 'POST',
@@ -57,10 +65,13 @@ export async function transcribeOpenAI(input: AudioInput): Promise<string> {
 
   const client = new OpenAI({ apiKey: key });
   const file = await toFile(input.buffer, input.filename, { type: input.contentType });
+  // OpenAI biases toward names given in `prompt` (same opt-in word list).
+  const prompt = input.keyterms?.length ? input.keyterms.slice(0, 100).join(', ') : undefined;
   const res = await client.audio.transcriptions.create({
     file,
     model,
     ...(lang ? { language: lang } : {}),
+    ...(prompt ? { prompt } : {}),
   });
   return (res.text ?? '').trim();
 }

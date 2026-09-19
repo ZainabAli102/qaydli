@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { isLocale } from '@/lib/i18n';
 import { transcribe, type TranscribeProvider } from '@/lib/transcribe';
+import { buildBusinessVocab } from '@/lib/vocab';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -55,10 +56,18 @@ export async function POST(req: NextRequest) {
   const type = (audio.type || 'audio/webm').split(';')[0];
   const ext = EXT[type] ?? 'webm';
 
+  // Vocabulary biasing is opt-in (ELEVENLABS_BIASING): a per-business word list
+  // of vendor/client/item names nudges the transcriber toward the owner's terms.
+  let keyterms: string[] | undefined;
+  if (process.env.ELEVENLABS_BIASING) {
+    const vocab = await buildBusinessVocab(supabase).catch(() => null);
+    if (vocab?.words.length) keyterms = vocab.words;
+  }
+
   try {
     const buffer = Buffer.from(await audio.arrayBuffer()); // memory only
     const result = await transcribe(
-      { buffer, filename: `voice.${ext}`, contentType: audio.type || 'audio/webm', locale },
+      { buffer, filename: `voice.${ext}`, contentType: audio.type || 'audio/webm', locale, keyterms },
       forced
     );
 
