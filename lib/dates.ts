@@ -54,6 +54,20 @@ export function monthRange(ym: string): MonthRange {
   };
 }
 
+/** Add `delta` months to a 'YYYY-MM' key (delta may be negative). */
+export function addMonths(ym: string, delta: number): string {
+  const [y, m] = ym.split('-').map(Number);
+  const total = y * 12 + (m - 1) + delta;
+  const ny = Math.floor(total / 12);
+  const nm = (total % 12 + 12) % 12;
+  return `${ny}-${p2(nm + 1)}`;
+}
+
+/** The N month keys ending at `ym`, oldest first (e.g. 6 → [ym-5 … ym]). */
+export function lastMonths(ym: string, n: number): string[] {
+  return Array.from({ length: n }, (_, i) => addMonths(ym, -(n - 1 - i)));
+}
+
 /** The 'YYYY-MM' a date string belongs to; falls back to the current month. */
 export function monthOf(
   dateStr: string | null | undefined,

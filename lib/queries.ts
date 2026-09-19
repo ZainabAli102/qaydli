@@ -73,6 +73,27 @@ export async function getAllTransactions(supabase: SupabaseClient): Promise<TxnR
   return (data as TxnRow[]) ?? [];
 }
 
+/** Transactions in [start, nextStart) — same as month query, clearer name. */
+export async function getTransactionsBetween(
+  supabase: SupabaseClient,
+  start: string,
+  nextStart: string
+): Promise<TxnRow[]> {
+  return getMonthTransactions(supabase, start, nextStart);
+}
+
+/** Owner overrides for recurring groups: { group_key: is_recurring }. */
+export async function getRecurringOverrides(
+  supabase: SupabaseClient
+): Promise<Record<string, boolean>> {
+  const { data } = await supabase.from('recurring_marks').select('group_key, is_recurring');
+  const map: Record<string, boolean> = {};
+  for (const r of (data ?? []) as Array<{ group_key: string; is_recurring: boolean }>) {
+    map[r.group_key] = r.is_recurring;
+  }
+  return map;
+}
+
 /** Transactions whose occurred_on falls in [monthStart, nextMonthStart). */
 export async function getMonthTransactions(
   supabase: SupabaseClient,

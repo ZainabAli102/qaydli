@@ -41,9 +41,11 @@ app/
   onboarding/page.tsx   Guard -> OnboardingForm (one-screen business setup)
   scan/page.tsx         Guard -> ScanClient (minimal upload page)
   api/scan/route.ts     POST: store image -> extract() -> persist -> ReceiptResult
-  (app)/dashboard, transactions (list + [id] detail/edit/delete), manual,
-        receipts (archive + [id] photo), upgrade — all under the (app) auth guard
+  (app)/dashboard, insights, transactions (list + [id] detail/edit/delete),
+        manual, receipts (archive + [id] photo), upgrade — under the (app) guard
   api/export            CSV of a month; api/receipts/download zips photos + CSV
+  api/insights/summary  model 3-sentence summary from computed NUMBERS only, cached
+lib/insights.ts         pure analytics (trend, categories, recurring, unusual); tested
 components/             LocaleProvider, LanguageSwitcher, ScanClient, ReviewForm,
         DashboardClient, TransactionsClient, ReceiptsClient, BottomNav, …
 lib/
