@@ -42,6 +42,16 @@ function ensureFonts() {
       { src: path.join(FONT_DIR, 'NotoNaskhArabic-Bold.ttf'), fontWeight: 'bold' },
     ],
   });
+  // Shadow the built-in default family so no run ever resolves to pdfkit's
+  // standard Helvetica (whose metrics are lazily required and easy to miss in
+  // serverless tracing). Every Text also sets a Noto family explicitly below.
+  Font.register({
+    family: 'Helvetica',
+    fonts: [
+      { src: path.join(FONT_DIR, 'NotoSans-Regular.ttf'), fontWeight: 'normal' },
+      { src: path.join(FONT_DIR, 'NotoSans-Bold.ttf'), fontWeight: 'bold' },
+    ],
+  });
   // Keep whole words intact (no hyphenation splitting).
   Font.registerHyphenationCallback((w) => [w]);
   registered = true;
