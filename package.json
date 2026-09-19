@@ -16,7 +16,8 @@
     "test:dates": "tsx tests/dates.test.ts",
     "test:category": "tsx tests/category.test.ts",
     "test:insights": "tsx tests/insights.test.ts",
-    "test:invoices": "tsx tests/invoices.test.ts"
+    "test:invoices": "tsx tests/invoices.test.ts",
+    "test:memory": "tsx tests/memory.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
