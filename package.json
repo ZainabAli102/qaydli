@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "description": "Phone-first finance app for SMEs in Iraq and Kurdistan. Photograph receipts and invoices; extract the data, check the maths, keep books in IQD with USD alongside.",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
