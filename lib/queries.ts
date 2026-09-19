@@ -19,12 +19,18 @@ export interface TxnRow {
   created_at: string;
 }
 
-/** Total number of saved transactions in the business (for the free trial). */
+/**
+ * Free-trial usage: owner-created entries. Counts transactions the owner entered
+ * (manual or scanned) plus invoices; the money-in transaction a payment creates
+ * is linked to its invoice (invoice_id) and excluded, so an invoice + its
+ * payment count as one entry, not two.
+ */
 export async function getEntryCount(supabase: SupabaseClient): Promise<number> {
-  const { count } = await supabase
-    .from('transactions')
-    .select('id', { count: 'exact', head: true });
-  return count ?? 0;
+  const [{ count: txns }, { count: invoices }] = await Promise.all([
+    supabase.from('transactions').select('id', { count: 'exact', head: true }).is('invoice_id', null),
+    supabase.from('invoices').select('id', { count: 'exact', head: true }),
+  ]);
+  return (txns ?? 0) + (invoices ?? 0);
 }
 
 /** Last category + payment method the owner used for this vendor, if any. */

@@ -92,6 +92,39 @@ export function daysBetween(fromISO: string, toISO: string): number {
   return Math.round((b - a) / 86_400_000);
 }
 
+/**
+ * Portfolio stats for Insights. Amounts must be pre-converted to a single
+ * currency (integer IQD) by the caller so figures across IQD/USD invoices add up.
+ */
+export interface InvoiceSummaryLike {
+  total: number; // IQD
+  paid: number; // IQD
+  status: InvoiceStatus;
+  dueDate: string | null;
+  issueDate: string;
+  paidOnDate: string | null; // date the invoice became fully paid, else null
+}
+
+export function invoiceStats(
+  rows: InvoiceSummaryLike[],
+  today: string
+): { owed: number; overdue: number; avgDaysToPay: number | null } {
+  let owed = 0;
+  let overdue = 0;
+  const payDays: number[] = [];
+  for (const r of rows) {
+    const outstanding = Math.max(0, r.total - r.paid);
+    if (r.status !== 'paid') owed += outstanding;
+    if (isOverdue({ status: r.status, dueDate: r.dueDate, today })) overdue += outstanding;
+    if (r.status === 'paid' && r.paidOnDate) {
+      payDays.push(Math.max(0, daysBetween(r.issueDate, r.paidOnDate)));
+    }
+  }
+  const avgDaysToPay =
+    payDays.length > 0 ? Math.round(payDays.reduce((a, b) => a + b, 0) / payDays.length) : null;
+  return { owed, overdue, avgDaysToPay };
+}
+
 /** The list tabs and which display-statuses each one shows. */
 export type InvoiceTab = 'all' | 'due' | 'overdue' | 'paid';
 
