@@ -4,10 +4,12 @@ import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale } from '@/components/LocaleProvider';
 import { Check, AlertTriangle, ArrowLeftRight, Trash2 } from 'lucide-react';
+import { DescribeBox } from '@/components/DescribeBox';
 import { CATEGORIES, PAYMENT_METHODS, isCategory, type Category, type PaymentMethod, type TxnType } from '@/lib/domain';
 import { fromIqd, toIqd, formatUsd, formatIqd, type Currency } from '@/lib/money';
 import { saveTransaction } from '@/app/(app)/review/[id]/actions';
 import { updateTransaction, deleteTransaction } from '@/app/(app)/transactions/[id]/actions';
+import type { ParsedExpenseDraft } from '@/lib/expense-parse';
 
 export interface ReviewLineItem {
   description: string;
@@ -65,6 +67,8 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [describeText, setDescribeText] = useState('');
+  const [filling, setFilling] = useState(false);
 
   const mode = initial.mode ?? 'scan';
   const scanned = mode === 'scan';
@@ -95,6 +99,39 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
   }
 
   const problemFlags = initial.flags.filter((f) => f.severity !== 'info');
+
+  // "Describe" (manual entry): parse a plain-language note into the fields.
+  function applyDraft(dr: ParsedExpenseDraft) {
+    if (dr.vendor) setVendor(dr.vendor);
+    if (dr.total != null) setTotal(String(dr.total));
+    if (dr.currency) setCurrency(dr.currency);
+    if (dr.type) setType(dr.type);
+    if (dr.category && isCategory(dr.category)) setCategory(dr.category);
+    if (dr.payment_method && (PAYMENT_METHODS as readonly string[]).includes(dr.payment_method)) {
+      setPaymentMethod(dr.payment_method);
+    }
+    if (dr.date && /^\d{4}-\d{2}-\d{2}$/.test(dr.date)) setDate(dr.date);
+  }
+
+  async function runDescribe() {
+    if (describeText.trim().length < 3) return;
+    setFilling(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/expense/parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: describeText }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || t('exp.describeFailed'));
+      applyDraft(data.draft as ParsedExpenseDraft);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('exp.describeFailed'));
+    } finally {
+      setFilling(false);
+    }
+  }
 
   async function save() {
     setBusy(true);
@@ -190,6 +227,20 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
               <li key={i}>{t(`flag.${f.code}`, f.message)}</li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {mode === 'manual' && (
+        <div className="mb-5">
+          <p className="mb-1.5 text-sm font-semibold text-slate-700">{t('exp.describeTitle')}</p>
+          <DescribeBox
+            value={describeText}
+            onChange={setDescribeText}
+            onFill={runDescribe}
+            filling={filling}
+            placeholder={t('exp.describePlaceholder')}
+            hint={t('exp.describeHint')}
+          />
         </div>
       )}
 

@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sparkles, ScanLine, PencilLine, Plus, Trash2, ArrowLeftRight, Check } from 'lucide-react';
 import { useLocale } from '@/components/LocaleProvider';
+import { DescribeBox } from '@/components/DescribeBox';
 import { compressImage } from '@/lib/image-client';
 import { computeTotals, dueDateFrom, type InvoiceCurrency } from '@/lib/invoices';
 import { formatMoney } from '@/lib/money';
@@ -219,22 +220,15 @@ export function InvoiceForm(props: {
       </div>
 
       {source === 'describe' && (
-        <div className="mb-5 rounded-lg border border-slate-200 bg-white p-3">
-          <textarea
+        <div className="mb-5">
+          <DescribeBox
             value={describeText}
-            onChange={(e) => setDescribeText(e.target.value)}
-            rows={3}
+            onChange={setDescribeText}
+            onFill={runDescribe}
+            filling={busy === 'describe'}
             placeholder={t('inv.describePlaceholder')}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-base focus:border-brand focus:outline-none"
+            hint={t('inv.describeHint')}
           />
-          <p className="mt-1 text-xs text-slate-500">{t('inv.describeHint')}</p>
-          <button
-            onClick={runDescribe}
-            disabled={busy === 'describe'}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
-          >
-            <Sparkles size={16} /> {busy === 'describe' ? t('inv.describing') : t('inv.describeBtn')}
-          </button>
         </div>
       )}
 

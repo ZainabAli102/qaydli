@@ -346,6 +346,25 @@ const en: Record<string, string> = {
   'settings.footerNote': 'Footer note',
   'settings.footerNoteHint': 'Shown at the bottom — e.g. payment terms or a thank-you line.',
   'settings.preview': 'Preview',
+  // describe (shared) + voice input
+  'describe.fill': 'Fill with AI',
+  'describe.filling': 'Reading…',
+  'voice.hint': 'Tap the mic and speak — we type it for you.',
+  'voice.record': 'Record voice',
+  'voice.stop': 'Stop',
+  'voice.recording': 'Recording',
+  'voice.tapToStop': 'Tap to stop',
+  'voice.transcribing': 'Transcribing…',
+  'voice.permissionDenied': 'Microphone access was blocked. Allow it in your browser settings, then try again.',
+  'voice.unsupported': 'Voice recording is not supported on this browser. Please type instead.',
+  'voice.noAudio': 'No audio was captured. Please try again.',
+  'voice.failed': 'Could not transcribe that. Try again, or type it.',
+  'voice.maxLen': 'Reached the 60-second limit.',
+  // expense "describe" (Add manually)
+  'exp.describeTitle': 'Describe it',
+  'exp.describePlaceholder': 'e.g. Paid 25,000 for fuel yesterday, cash',
+  'exp.describeHint': 'Say it or write it in plain words — we fill the form for you to check.',
+  'exp.describeFailed': 'Could not understand that. Try again, or fill it in.',
 };
 
 const ar: Record<string, string> = {
@@ -649,6 +668,23 @@ const ar: Record<string, string> = {
   'settings.footerNote': 'ملاحظة التذييل',
   'settings.footerNoteHint': 'تظهر في الأسفل — مثل شروط الدفع أو عبارة شكر.',
   'settings.preview': 'معاينة',
+  'describe.fill': 'إكمال بالذكاء الاصطناعي',
+  'describe.filling': 'جارٍ القراءة…',
+  'voice.hint': 'اضغط الميكروفون وتحدّث — نكتبها لك.',
+  'voice.record': 'تسجيل صوتي',
+  'voice.stop': 'إيقاف',
+  'voice.recording': 'يُسجّل',
+  'voice.tapToStop': 'اضغط للإيقاف',
+  'voice.transcribing': 'جارٍ التفريغ…',
+  'voice.permissionDenied': 'تم حظر الوصول إلى الميكروفون. اسمح به في إعدادات المتصفح ثم حاول مجدداً.',
+  'voice.unsupported': 'التسجيل الصوتي غير مدعوم في هذا المتصفح. يرجى الكتابة بدلاً من ذلك.',
+  'voice.noAudio': 'لم يُلتقط أي صوت. حاول مرة أخرى.',
+  'voice.failed': 'تعذّر التفريغ. حاول مجدداً أو اكتبها.',
+  'voice.maxLen': 'تم بلوغ حد ٦٠ ثانية.',
+  'exp.describeTitle': 'صِفها',
+  'exp.describePlaceholder': 'مثال: دفعت ٢٥,٠٠٠ وقوداً أمس، نقداً',
+  'exp.describeHint': 'قلها أو اكتبها بكلماتك — نملأ النموذج لتتحقق منه.',
+  'exp.describeFailed': 'تعذّر الفهم. حاول مجدداً أو أدخلها يدوياً.',
 };
 
 const ckb: Record<string, string> = {
@@ -952,6 +988,23 @@ const ckb: Record<string, string> = {
   'settings.footerNote': 'تێبینی ژێرەوە',
   'settings.footerNoteHint': 'لە خوارەوە دەردەکەوێت — وەک مەرجەکانی پارەدان یان دەربڕینی سوپاس.',
   'settings.preview': 'پێشبینین',
+  'describe.fill': 'پڕکردنەوە بە AI',
+  'describe.filling': 'خوێندنەوە…',
+  'voice.hint': 'مایکرۆفۆنەکە دابگرە و قسە بکە — بۆت دەنووسین.',
+  'voice.record': 'تۆمارکردنی دەنگ',
+  'voice.stop': 'ڕاگرتن',
+  'voice.recording': 'تۆمار دەکات',
+  'voice.tapToStop': 'بۆ ڕاگرتن دابگرە',
+  'voice.transcribing': 'گواستنەوە بۆ نووسین…',
+  'voice.permissionDenied': 'دەستگەیشتن بە مایکرۆفۆن ڕاگیراوە. لە ڕێکخستنی وێبگەڕەکەت ڕێی پێبدە، پاشان دووبارە هەوڵبدە.',
+  'voice.unsupported': 'تۆمارکردنی دەنگ لەم وێبگەڕەدا پشتگیری ناکرێت. تکایە لەبری ئەوە بنووسە.',
+  'voice.noAudio': 'هیچ دەنگێک نەگیرا. تکایە دووبارە هەوڵبدە.',
+  'voice.failed': 'نەگوازرایەوە. دووبارە هەوڵبدە یان بینووسە.',
+  'voice.maxLen': 'گەیشتە سنووری ٦٠ چرکە.',
+  'exp.describeTitle': 'وەسفی بکە',
+  'exp.describePlaceholder': 'نموونە: ٢٥,٠٠٠ بۆ سووتەمەنی دراوە دوێنێ، نەقد',
+  'exp.describeHint': 'بیڵێ یان بینووسە بە زمانی ئاسان — فۆرمەکەت بۆ پڕدەکەینەوە بۆ پشکنین.',
+  'exp.describeFailed': 'تێنەگەیشتین. دووبارە هەوڵبدە یان بە دەست پڕی بکەرەوە.',
 };
 
 export const dictionaries: Record<Locale, Record<string, string>> = { en, ar, ckb };
