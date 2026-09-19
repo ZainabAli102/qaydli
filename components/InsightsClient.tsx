@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ChevronLeft, ChevronRight, AlertTriangle, ArrowUp, ArrowDown, Minus } from 'lucide-react';
 import { useLocale } from '@/components/LocaleProvider';
 import { BottomNav } from '@/components/BottomNav';
+import { CategoryIcon } from '@/components/icons';
 import { TrendChart } from '@/components/TrendChart';
 import { SummaryCard } from '@/components/SummaryCard';
 import { monthLabel } from '@/lib/month-label';
@@ -48,14 +50,14 @@ export function InsightsClient(props: {
             onClick={() => router.push(`/insights?m=${props.prevMonth}`)}
             className="rounded-md border border-slate-300 px-3 py-1.5 text-slate-600"
           >
-            ‹
+            <ChevronLeft size={20} className="rtl:-scale-x-100" />
           </button>
           <span className="font-semibold text-slate-800">{monthLabel(props.month, locale)}</span>
           <button
             onClick={() => router.push(`/insights?m=${props.nextMonth}`)}
             className="rounded-md border border-slate-300 px-3 py-1.5 text-slate-600"
           >
-            ›
+            <ChevronRight size={20} className="rtl:-scale-x-100" />
           </button>
         </div>
 
@@ -92,16 +94,19 @@ export function InsightsClient(props: {
           ) : (
             <div className="space-y-2">
               {ins.categories.map((c) => (
-                <div key={c.category}>
-                  <div className="mb-0.5 flex items-center justify-between text-xs">
-                    <span className="text-slate-600">{t(`cat.${c.category}`)}</span>
-                    <span className="flex items-center gap-2">
-                      <span className="text-slate-700">{formatIqd(c.amount)}</span>
-                      <DeltaChip delta={c.deltaPct} good="down" />
-                    </span>
-                  </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
-                    <div className="h-full bg-brand" style={{ width: `${maxCat ? (c.amount / maxCat) * 100 : 0}%` }} />
+                <div key={c.category} className="flex items-center gap-2">
+                  <CategoryIcon category={c.category} size={18} />
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-0.5 flex items-center justify-between text-xs">
+                      <span className="truncate text-slate-600">{t(`cat.${c.category}`)}</span>
+                      <span className="flex shrink-0 items-center gap-2">
+                        <span className="text-slate-700">{formatIqd(c.amount)}</span>
+                        <DeltaChip delta={c.deltaPct} good="down" />
+                      </span>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                      <div className="h-full bg-brand" style={{ width: `${maxCat ? (c.amount / maxCat) * 100 : 0}%` }} />
+                    </div>
                   </div>
                 </div>
               ))}
@@ -141,13 +146,16 @@ export function InsightsClient(props: {
             <ul className="space-y-1.5">
               {ins.recurring.groups.map((g) => (
                 <li key={g.key} className="flex items-center justify-between gap-2 text-sm">
-                  <div className="min-w-0">
-                    <p className="truncate text-slate-700">
-                      {g.kind === 'category' ? t(`cat.${g.label}`) : g.label}
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      {formatIqd(g.monthlyAmount)} · {g.monthsPresent}m
-                    </p>
+                  <div className="flex min-w-0 items-center gap-2">
+                    {g.kind === 'category' && <CategoryIcon category={g.label} size={18} />}
+                    <div className="min-w-0">
+                      <p className="truncate text-slate-700">
+                        {g.kind === 'category' ? t(`cat.${g.label}`) : g.label}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {formatIqd(g.monthlyAmount)} · {g.monthsPresent}m
+                      </p>
+                    </div>
                   </div>
                   <label className="flex shrink-0 items-center gap-1 text-xs text-slate-500">
                     {t('ins.recurring')}
@@ -174,9 +182,12 @@ export function InsightsClient(props: {
             <ul className="space-y-1.5">
               {ins.unusual.map((u) => (
                 <li key={u.id} className="flex items-center justify-between gap-2 text-sm">
-                  <div className="min-w-0">
-                    <p className="truncate text-slate-700">{u.vendor || '—'}</p>
-                    <p className="text-xs text-amber-600">{t(`ins.reason.${u.reason}`)}</p>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <AlertTriangle size={18} className="shrink-0 text-amber-500" />
+                    <div className="min-w-0">
+                      <p className="truncate text-slate-700">{u.vendor || '—'}</p>
+                      <p className="text-xs text-amber-600">{t(`ins.reason.${u.reason}`)}</p>
+                    </div>
                   </div>
                   <span className="shrink-0 font-medium text-slate-700">{formatIqd(u.amount)}</span>
                 </li>
@@ -230,10 +241,10 @@ function DeltaChip({ delta, good }: { delta: number | null; good: 'up' | 'down' 
   const flat = rounded === 0;
   const isGood = flat ? true : (good === 'up' ? up : !up);
   const color = flat ? 'text-slate-400' : isGood ? 'text-green-600' : 'text-red-500';
-  const arrow = flat ? '→' : up ? '▲' : '▼';
+  const Arrow = flat ? Minus : up ? ArrowUp : ArrowDown;
   return (
-    <span className={`text-xs font-medium ${color}`}>
-      {arrow} {Math.abs(rounded)}%
+    <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${color}`}>
+      <Arrow size={12} /> {Math.abs(rounded)}%
     </span>
   );
 }

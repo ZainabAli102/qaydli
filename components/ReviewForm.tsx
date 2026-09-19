@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale } from '@/components/LocaleProvider';
+import { Check, AlertTriangle, ArrowLeftRight, Trash2 } from 'lucide-react';
 import { CATEGORIES, PAYMENT_METHODS, isCategory, type Category, type PaymentMethod, type TxnType } from '@/lib/domain';
 import { fromIqd, toIqd, formatUsd, formatIqd, type Currency } from '@/lib/money';
 import { saveTransaction } from '@/app/(app)/review/[id]/actions';
@@ -176,10 +177,14 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
 
       {/* maths note + flags (scanned entries only) */}
       {!scanned ? null : problemFlags.length === 0 ? (
-        <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">✓ {t('review.mathsOk')}</p>
+        <p className="mb-4 flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
+          <Check size={16} /> {t('review.mathsOk')}
+        </p>
       ) : (
         <div className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          <p className="mb-1 font-medium">{t('review.mathsIssues')}</p>
+          <p className="mb-1 flex items-center gap-2 font-medium">
+            <AlertTriangle size={16} /> {t('review.mathsIssues')}
+          </p>
           <ul className="list-inside list-disc">
             {problemFlags.map((f, i) => (
               <li key={i}>{t(`flag.${f.code}`, f.message)}</li>
@@ -215,9 +220,9 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
             <button
               type="button"
               onClick={switchCurrency}
-              className="shrink-0 rounded-md border border-brand px-3 py-2 text-sm font-semibold text-brand"
+              className="flex shrink-0 items-center gap-1 rounded-md border border-brand px-3 py-2 text-sm font-semibold text-brand"
             >
-              {currency} ⇄
+              {currency} <ArrowLeftRight size={14} />
             </button>
           </div>
           <span className="mt-1 block text-xs text-slate-500">
@@ -333,8 +338,8 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
               </div>
             </div>
           ) : (
-            <button onClick={() => setConfirmDelete(true)} className="text-sm font-medium text-red-600">
-              🗑 {t('txn.delete')}
+            <button onClick={() => setConfirmDelete(true)} className="flex items-center gap-1.5 text-sm font-medium text-red-600">
+              <Trash2 size={16} /> {t('txn.delete')}
             </button>
           )}
         </div>

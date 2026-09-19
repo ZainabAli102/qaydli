@@ -3,8 +3,10 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { useLocale } from '@/components/LocaleProvider';
 import { BottomNav } from '@/components/BottomNav';
+import { CategoryIcon } from '@/components/icons';
 import { CATEGORIES, type Category, type TxnType } from '@/lib/domain';
 import { formatIqd, formatUsd, fromIqd } from '@/lib/money';
 import { monthLabel } from '@/lib/month-label';
@@ -52,25 +54,28 @@ export function TransactionsClient(props: {
             onClick={() => router.push(`/transactions?m=${props.prevMonth}`)}
             className="rounded-md border border-slate-300 px-3 py-1.5 text-slate-600"
           >
-            ‹
+            <ChevronLeft size={20} className="rtl:-scale-x-100" />
           </button>
           <span className="font-semibold text-slate-800">{monthLabel(props.month, locale)}</span>
           <button
             onClick={() => router.push(`/transactions?m=${props.nextMonth}`)}
             className="rounded-md border border-slate-300 px-3 py-1.5 text-slate-600"
           >
-            ›
+            <ChevronRight size={20} className="rtl:-scale-x-100" />
           </button>
         </div>
 
         {/* Search + filters */}
         <div className="mb-3 space-y-2">
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={t('txn.search')}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-base focus:border-brand focus:outline-none"
-          />
+          <div className="relative">
+            <Search size={18} className="absolute top-1/2 start-3 -translate-y-1/2 text-slate-400" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={t('txn.search')}
+              className="w-full rounded-md border border-slate-300 py-2 pe-3 ps-9 text-base focus:border-brand focus:outline-none"
+            />
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <select
               value={cat}
@@ -104,12 +109,15 @@ export function TransactionsClient(props: {
           <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
             {rows.map((tx) => (
               <li key={tx.id}>
-                <Link href={`/transactions/${tx.id}`} className="flex items-center justify-between px-3 py-2.5">
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-slate-800">{tx.vendor || t('review.vendor')}</p>
-                    <p className="text-xs text-slate-500">
-                      {t(`cat.${tx.category ?? 'other'}`)} · {tx.occurred_on ?? ''}
-                    </p>
+                <Link href={`/transactions/${tx.id}`} className="flex items-center justify-between gap-3 px-3 py-2.5">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <CategoryIcon category={tx.category} size={20} />
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-slate-800">{tx.vendor || t('review.vendor')}</p>
+                      <p className="text-xs text-slate-500">
+                        {t(`cat.${tx.category ?? 'other'}`)} · {tx.occurred_on ?? ''}
+                      </p>
+                    </div>
                   </div>
                   <div className="shrink-0 text-end">
                     <p className={`font-semibold ${tx.direction === 'in' ? 'text-green-600' : 'text-slate-800'}`}>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Sprout } from 'lucide-react';
 import { useLocale } from '@/components/LocaleProvider';
 
 // Fetches the model-generated 3-sentence summary (numbers only, cached server-
@@ -32,8 +33,8 @@ export function SummaryCard({ month, signatureKey }: { month: string; signatureK
   if (state.kind === 'locked') {
     return (
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-center">
-        <div className="mb-1 text-2xl" aria-hidden>
-          🌱
+        <div className="mb-1 flex justify-center text-amber-500" aria-hidden>
+          <Sprout size={28} />
         </div>
         <p className="text-sm text-amber-800">{t('ins.locked')}</p>
         <p className="mt-1 text-xs text-amber-600">

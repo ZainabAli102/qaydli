@@ -2,34 +2,40 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { LayoutDashboard, BarChart3, Images, ScanLine, type LucideIcon } from 'lucide-react';
 import { useLocale } from '@/components/LocaleProvider';
 
-// Phone-first bottom navigation between the two main screens.
+// Phone-first bottom navigation. Active item is brand teal on a soft pill;
+// inactive items are muted.
 export function BottomNav() {
   const { t } = useLocale();
   const path = usePathname();
-  const items = [
-    { href: '/dashboard', key: 'nav.dashboard', icon: '📊' },
-    { href: '/insights', key: 'nav.insights', icon: '📈' },
-    { href: '/receipts', key: 'nav.receipts', icon: '🧾' },
-    { href: '/scan', key: 'nav.scan', icon: '📷' },
+  const items: Array<{ href: string; key: string; Icon: LucideIcon }> = [
+    { href: '/dashboard', key: 'nav.dashboard', Icon: LayoutDashboard },
+    { href: '/insights', key: 'nav.insights', Icon: BarChart3 },
+    { href: '/receipts', key: 'nav.receipts', Icon: Images },
+    { href: '/scan', key: 'nav.scan', Icon: ScanLine },
   ];
   return (
     <nav className="sticky bottom-0 z-10 grid grid-cols-4 border-t border-slate-200 bg-white">
-      {items.map((it) => {
-        const active = path === it.href || path.startsWith(it.href + '/');
+      {items.map(({ href, key, Icon }) => {
+        const active = path === href || path.startsWith(href + '/');
         return (
           <Link
-            key={it.href}
-            href={it.href}
-            className={`flex flex-col items-center gap-0.5 py-2 text-xs font-medium ${
-              active ? 'text-brand' : 'text-slate-500'
+            key={href}
+            href={href}
+            className={`flex flex-col items-center gap-1 py-2 text-xs font-medium ${
+              active ? 'text-brand' : 'text-slate-400'
             }`}
           >
-            <span className="text-lg" aria-hidden>
-              {it.icon}
+            <span
+              className={`flex h-9 w-14 items-center justify-center rounded-full ${
+                active ? 'bg-brand/10' : ''
+              }`}
+            >
+              <Icon size={24} strokeWidth={active ? 2.4 : 2} fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.15 : 0} />
             </span>
-            {t(it.key)}
+            {t(key)}
           </Link>
         );
       })}

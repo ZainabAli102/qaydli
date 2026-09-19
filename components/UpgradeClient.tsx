@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { Sprout } from 'lucide-react';
 import { useLocale } from '@/components/LocaleProvider';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
@@ -17,8 +18,8 @@ export function UpgradeClient() {
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center text-center">
-        <div className="mb-4 text-5xl" aria-hidden>
-          🌱
+        <div className="mb-4 flex justify-center text-brand" aria-hidden>
+          <Sprout size={56} />
         </div>
         <h2 className="mb-2 text-2xl font-bold text-slate-800">{t('upgrade.title')}</h2>
         <p className="mb-6 text-slate-600">{t('upgrade.body')}</p>

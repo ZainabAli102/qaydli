@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale } from '@/components/LocaleProvider';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { Camera, Images, Check } from 'lucide-react';
 import { compressImage } from '@/lib/image-client';
 
 type Stage = 'idle' | 'reading' | 'checking' | 'categorizing' | 'error';
@@ -125,15 +126,15 @@ export function ScanClient({
         <div className="mb-4 grid gap-3">
           <button
             onClick={() => cameraRef.current?.click()}
-            className="rounded-lg bg-brand px-4 py-4 text-base font-semibold text-white"
+            className="flex items-center justify-center gap-2 rounded-lg bg-brand px-4 py-4 text-base font-semibold text-white"
           >
-            📷 {t('takePhoto')}
+            <Camera size={20} /> {t('takePhoto')}
           </button>
           <button
             onClick={() => galleryRef.current?.click()}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-4 text-base font-semibold text-slate-700"
+            className="flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-4 text-base font-semibold text-slate-700"
           >
-            🖼️ {t('fromGallery')}
+            <Images size={20} /> {t('fromGallery')}
           </button>
         </div>
       )}
@@ -188,7 +189,7 @@ function ProgressStep({ active, done, label }: { active: boolean; done: boolean;
           done ? 'bg-brand text-white' : active ? 'bg-brand/20 text-brand' : 'bg-slate-100 text-slate-400'
         }`}
       >
-        {done ? '✓' : active ? '…' : ''}
+        {done ? <Check size={12} /> : active ? '…' : ''}
       </span>
       <span className={active || done ? 'text-slate-800' : 'text-slate-400'}>{label}</span>
     </div>

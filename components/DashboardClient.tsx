@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { ChevronLeft, ChevronRight, Camera, PencilLine, Download, Check } from 'lucide-react';
 import { useLocale } from '@/components/LocaleProvider';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { BottomNav } from '@/components/BottomNav';
+import { CategoryIcon } from '@/components/icons';
 import { signOut } from '@/app/(app)/scan/actions';
 import { formatIqd, formatUsd, fromIqd } from '@/lib/money';
 import { monthLabel } from '@/lib/month-label';
@@ -52,8 +54,8 @@ export function DashboardClient(props: {
     <div className="flex min-h-dvh flex-col">
       {toast && (
         <div className="fixed inset-x-0 top-3 z-20 mx-auto flex max-w-md justify-center px-4">
-          <div className="rounded-full bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-lg">
-            ✓ {toast}
+          <div className="flex items-center gap-1.5 rounded-full bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-lg">
+            <Check size={16} /> {toast}
           </div>
         </div>
       )}
@@ -118,7 +120,7 @@ export function DashboardClient(props: {
             disabled={props.allTime}
             className="rounded-md border border-slate-300 px-3 py-1.5 text-slate-600 disabled:opacity-30"
           >
-            ‹
+            <ChevronLeft size={20} className="rtl:-scale-x-100" />
           </button>
           <span className="font-semibold text-slate-800">
             {props.allTime ? t('dash.allTime') : monthLabel(props.month, locale)}
@@ -129,7 +131,7 @@ export function DashboardClient(props: {
             disabled={props.allTime}
             className="rounded-md border border-slate-300 px-3 py-1.5 text-slate-600 disabled:opacity-30"
           >
-            ›
+            <ChevronRight size={20} className="rtl:-scale-x-100" />
           </button>
         </div>
         <div className="mb-4 text-center">
@@ -157,13 +159,16 @@ export function DashboardClient(props: {
             <h2 className="mb-2 text-sm font-semibold text-slate-700">{t('dash.byCategory')}</h2>
             <div className="space-y-2">
               {props.categories.map((c) => (
-                <div key={c.category}>
-                  <div className="mb-0.5 flex justify-between text-xs text-slate-600">
-                    <span>{t(`cat.${c.category}`)}</span>
-                    <span>{formatIqd(c.amount)}</span>
-                  </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
-                    <div className="h-full bg-brand" style={{ width: `${maxCat ? (c.amount / maxCat) * 100 : 0}%` }} />
+                <div key={c.category} className="flex items-center gap-2">
+                  <CategoryIcon category={c.category} size={18} />
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-0.5 flex justify-between text-xs text-slate-600">
+                      <span className="truncate">{t(`cat.${c.category}`)}</span>
+                      <span className="shrink-0">{formatIqd(c.amount)}</span>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                      <div className="h-full bg-brand" style={{ width: `${maxCat ? (c.amount / maxCat) * 100 : 0}%` }} />
+                    </div>
                   </div>
                 </div>
               ))}
@@ -179,8 +184,8 @@ export function DashboardClient(props: {
               <Link href={`/transactions?m=${props.allTime ? thisMonth : props.month}`} className="text-sm font-medium text-brand">
                 {t('txn.viewAll')}
               </Link>
-              <a href={`/api/export?m=${props.allTime ? thisMonth : props.month}`} className="text-sm font-medium text-brand">
-                {t('dash.export')}
+              <a href={`/api/export?m=${props.allTime ? thisMonth : props.month}`} className="inline-flex items-center gap-1 text-sm font-medium text-brand">
+                <Download size={16} /> {t('dash.export')}
               </a>
             </div>
           </div>
@@ -192,12 +197,15 @@ export function DashboardClient(props: {
             <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
               {props.transactions.slice(0, 8).map((tx) => (
                 <li key={tx.id}>
-                  <Link href={`/transactions/${tx.id}`} className="flex items-center justify-between px-3 py-2.5">
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-slate-800">{tx.vendor || t('review.vendor')}</p>
-                      <p className="text-xs text-slate-500">
-                        {t(`cat.${tx.category ?? 'other'}`)} · {tx.occurred_on ?? ''}
-                      </p>
+                  <Link href={`/transactions/${tx.id}`} className="flex items-center justify-between gap-3 px-3 py-2.5">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <CategoryIcon category={tx.category} size={20} />
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-slate-800">{tx.vendor || t('review.vendor')}</p>
+                        <p className="text-xs text-slate-500">
+                          {t(`cat.${tx.category ?? 'other'}`)} · {tx.occurred_on ?? ''}
+                        </p>
+                      </div>
                     </div>
                     <div className="shrink-0 text-end">
                       <p className={`font-semibold ${tx.direction === 'in' ? 'text-green-600' : 'text-slate-800'}`}>
@@ -216,15 +224,15 @@ export function DashboardClient(props: {
         <div className="grid grid-cols-2 gap-3">
           <Link
             href="/scan"
-            className="rounded-lg bg-brand px-4 py-3 text-center text-base font-semibold text-white"
+            className="flex items-center justify-center gap-2 rounded-lg bg-brand px-4 py-3 text-center text-base font-semibold text-white"
           >
-            📷 {t('dash.newScan')}
+            <Camera size={20} /> {t('dash.newScan')}
           </Link>
           <Link
             href="/manual"
-            className="rounded-lg border border-brand px-4 py-3 text-center text-base font-semibold text-brand"
+            className="flex items-center justify-center gap-2 rounded-lg border border-brand px-4 py-3 text-center text-base font-semibold text-brand"
           >
-            ✏️ {t('dash.addManually')}
+            <PencilLine size={20} /> {t('dash.addManually')}
           </Link>
         </div>
       </main>

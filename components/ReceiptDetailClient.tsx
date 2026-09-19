@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { ChevronLeft, Receipt } from 'lucide-react';
 import { useLocale } from '@/components/LocaleProvider';
 
 export function ReceiptDetailClient(props: {
@@ -12,8 +13,8 @@ export function ReceiptDetailClient(props: {
   return (
     <main className="mx-auto max-w-md px-4 py-6">
       <div className="mb-4">
-        <Link href="/receipts" className="text-sm text-brand">
-          ‹ {t('receipts.title')}
+        <Link href="/receipts" className="inline-flex items-center gap-1 text-sm text-brand">
+          <ChevronLeft size={20} className="rtl:-scale-x-100" /> {t('receipts.title')}
         </Link>
       </div>
 
@@ -25,7 +26,9 @@ export function ReceiptDetailClient(props: {
           className="mb-4 w-full rounded-lg border border-slate-200 object-contain"
         />
       ) : (
-        <div className="mb-4 flex h-64 items-center justify-center rounded-lg bg-slate-100 text-slate-300">🧾</div>
+        <div className="mb-4 flex h-64 items-center justify-center rounded-lg bg-slate-100 text-slate-300">
+          <Receipt size={40} />
+        </div>
       )}
 
       {props.transactionId ? (

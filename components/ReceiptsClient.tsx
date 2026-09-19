@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { ChevronLeft, ChevronRight, Download, Receipt } from 'lucide-react';
 import { useLocale } from '@/components/LocaleProvider';
 import { BottomNav } from '@/components/BottomNav';
 import { monthLabel } from '@/lib/month-label';
@@ -33,9 +34,9 @@ export function ReceiptsClient(props: {
           <h1 className="text-xl font-bold text-brand">{t('receipts.title')}</h1>
           <a
             href={`/api/receipts/download?m=${props.month}`}
-            className="rounded-md border border-brand px-3 py-1.5 text-sm font-medium text-brand"
+            className="inline-flex items-center gap-1 rounded-md border border-brand px-3 py-1.5 text-sm font-medium text-brand"
           >
-            ⬇ {t('receipts.downloadAll')}
+            <Download size={16} /> {t('receipts.downloadAll')}
           </a>
         </header>
 
@@ -45,14 +46,14 @@ export function ReceiptsClient(props: {
             onClick={() => router.push(`/receipts?m=${props.prevMonth}`)}
             className="rounded-md border border-slate-300 px-3 py-1.5 text-slate-600"
           >
-            ‹
+            <ChevronLeft size={20} className="rtl:-scale-x-100" />
           </button>
           <span className="font-semibold text-slate-800">{monthLabel(props.month, locale)}</span>
           <button
             onClick={() => router.push(`/receipts?m=${props.nextMonth}`)}
             className="rounded-md border border-slate-300 px-3 py-1.5 text-slate-600"
           >
-            ›
+            <ChevronRight size={20} className="rtl:-scale-x-100" />
           </button>
         </div>
 
@@ -89,7 +90,9 @@ function Grid({ cards, resume }: { cards: ReceiptCard[]; resume?: boolean }) {
               // eslint-disable-next-line @next/next/no-img-element
               <img src={c.url} alt={c.vendor || 'receipt'} className="h-32 w-full bg-slate-50 object-cover" />
             ) : (
-              <div className="flex h-32 w-full items-center justify-center bg-slate-100 text-slate-300">🧾</div>
+              <div className="flex h-32 w-full items-center justify-center bg-slate-100 text-slate-300">
+                <Receipt size={32} />
+              </div>
             )}
           </Link>
           <div className="p-2">
