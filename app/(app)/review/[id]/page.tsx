@@ -78,6 +78,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
     paymentMethod,
     type: 'expense',
     mode: 'scan',
+    modelUsed: (r as { model_used?: string | null }).model_used ?? null,
     fromMemory: cat.fromMemory,
     conf: {
       vendor: conf(r.vendor),

@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const draft = await parseExpenseDraft(text, { todayISO: todayISO() });
-    return NextResponse.json({ draft });
+    return NextResponse.json({ draft, model: process.env.OPENAI_MODEL || 'gpt-4o' });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : String(err) },

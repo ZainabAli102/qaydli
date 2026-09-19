@@ -7,6 +7,12 @@ import { getSessionContext } from '@/lib/session';
 import { getEntryCount } from '@/lib/queries';
 import { FREE_TRIAL_LIMIT } from '@/lib/domain';
 import { computeTotals, type InvoiceCurrency, type InvoiceItem } from '@/lib/invoices';
+import {
+  recordCorrections,
+  learnItemPhrases,
+  learnClientAlias,
+  type CorrectionSource,
+} from '@/lib/corrections';
 
 export interface CreateInvoiceInput {
   clientId: string | null;
@@ -18,6 +24,15 @@ export interface CreateInvoiceInput {
   dueDate: string | null;
   notes: string;
   documentId: string | null; // scan origin, if any
+  // Learning loop: what Describe/voice proposed, for corrections + client alias.
+  learn?: {
+    source: CorrectionSource;
+    language: string;
+    modelUsed: string | null;
+    spokenClientName: string | null; // client name as the AI heard it
+    resolvedClientName: string | null; // the client the owner actually chose
+    aiCurrency: string | null;
+  };
 }
 
 export type CreateInvoiceResult =
@@ -97,6 +112,33 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<CreateIn
     .select('id')
     .single();
   if (invErr) return { error: 'save', message: invErr.message };
+
+  // Learning loop (best-effort): item phrases always; client alias + corrections
+  // when Describe/voice was used.
+  try {
+    await learnItemPhrases(
+      supabase,
+      items.map((it) => ({ description: it.description, unit_price: it.unit_price }))
+    );
+    const learn = input.learn;
+    if (learn) {
+      await learnClientAlias(supabase, learn.spokenClientName, clientId, learn.resolvedClientName);
+      await recordCorrections(
+        supabase,
+        business.id,
+        { source: learn.source, language: learn.language, modelUsed: learn.modelUsed, ai: {
+          client: learn.spokenClientName,
+          currency: learn.aiCurrency,
+        } },
+        {
+          client: (learn.resolvedClientName ?? '').trim(),
+          currency: input.currency,
+        }
+      );
+    }
+  } catch (err) {
+    console.error('[createInvoice] learning failed:', err);
+  }
 
   redirect(`/invoices/${inv.id}`);
 }

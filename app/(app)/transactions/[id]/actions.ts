@@ -6,12 +6,15 @@ import { getSessionContext } from '@/lib/session';
 import { toIqd } from '@/lib/money';
 import { typeToDirection } from '@/lib/domain';
 import { todayISO, monthOf } from '@/lib/dates';
+import { learnFromTxn } from '@/lib/txn-learning';
+import type { LearnMeta } from '@/lib/corrections';
 import type { SaveTransactionInput, SaveResult } from '@/app/(app)/review/[id]/actions';
 
 // Update an existing transaction (no trial check — not a new entry).
 export async function updateTransaction(
   id: string,
-  input: SaveTransactionInput
+  input: SaveTransactionInput,
+  learn?: LearnMeta
 ): Promise<SaveResult> {
   const { user, business } = await getSessionContext();
   if (!user || !business) return { error: 'auth', message: 'Your session has expired. Please sign in again.' };
@@ -46,6 +49,9 @@ export async function updateTransaction(
       .update({ corrections: input, status: 'reviewed' })
       .eq('id', input.documentId);
   }
+
+  // Learning loop: capture edits as corrections + reinforce memory.
+  await learnFromTxn(supabase, business.id, input, learn);
 
   const ym = monthOf(occurredOn);
   redirect(`/dashboard?m=${ym}&saved=${ym}`);

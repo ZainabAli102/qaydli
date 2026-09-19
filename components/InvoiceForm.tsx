@@ -12,6 +12,7 @@ import { receiptToDraft } from '@/lib/invoice-from-receipt';
 import type { ParsedInvoiceDraft } from '@/lib/invoice-parse';
 import type { ClientRow } from '@/lib/invoice-queries';
 import { createInvoice, type CreateInvoiceInput } from '@/app/(app)/invoices/new/actions';
+import type { CorrectionSource } from '@/lib/corrections';
 
 type Source = 'manual' | 'describe' | 'scan';
 type DueMode = '7' | '14' | '30' | 'custom' | 'none';
@@ -28,7 +29,7 @@ export function InvoiceForm(props: {
   usdIqdRate: number;
   today: string;
 }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -55,6 +56,12 @@ export function InvoiceForm(props: {
   const [describeText, setDescribeText] = useState('');
   const [busy, setBusy] = useState<null | 'describe' | 'scan' | 'submit'>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Learning loop: remember what Describe/voice/scan proposed (client, currency).
+  const voiceUsedRef = useRef(false);
+  const describeModelRef = useRef<string | null>(null);
+  const describeSourceRef = useRef<CorrectionSource>('describe');
+  const describeAiRef = useRef<{ spokenClientName: string | null; aiCurrency: string | null } | null>(null);
 
   const numItems = useMemo(
     () => items.map((it) => ({ qty: Number(it.qty) || 0, unit_price: Number(it.unit_price) || 0 })),
@@ -103,6 +110,7 @@ export function InvoiceForm(props: {
       setDueMode(([7, 14, 30].includes(d.due_in_days) ? String(d.due_in_days) : 'custom') as DueMode);
       setDueDate(dueDateFrom(issueDate, d.due_in_days));
     }
+    describeAiRef.current = { spokenClientName: d.client_name ?? null, aiCurrency: d.currency ?? null };
     setSource('manual'); // drop the owner into the editable form to check
   }
 
@@ -118,6 +126,8 @@ export function InvoiceForm(props: {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || t('inv.describeFailed'));
+      describeModelRef.current = data.model ?? null;
+      describeSourceRef.current = voiceUsedRef.current ? 'voice' : 'describe';
       applyDraft(data.draft as ParsedInvoiceDraft);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('inv.describeFailed'));
@@ -140,6 +150,7 @@ export function InvoiceForm(props: {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || t('scan.failed'));
       setDocumentId(data.document_id ?? null);
+      describeSourceRef.current = 'scan';
       applyDraft(receiptToDraft(data.result));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('scan.failed'));
@@ -166,6 +177,10 @@ export function InvoiceForm(props: {
       return;
     }
 
+    const resolvedClientName = adding
+      ? newName.trim()
+      : props.clients.find((c) => c.id === clientId)?.name ?? null;
+
     const input: CreateInvoiceInput = {
       clientId: adding ? null : clientId || null,
       newClient: adding ? { name: newName, phone: newPhone, email: newEmail, address: newAddress } : null,
@@ -176,6 +191,16 @@ export function InvoiceForm(props: {
       dueDate: dueMode === 'none' ? null : dueDate,
       notes,
       documentId,
+      learn: describeAiRef.current
+        ? {
+            source: describeSourceRef.current,
+            language: locale,
+            modelUsed: describeModelRef.current,
+            spokenClientName: describeAiRef.current.spokenClientName,
+            resolvedClientName,
+            aiCurrency: describeAiRef.current.aiCurrency,
+          }
+        : undefined,
     };
 
     setBusy('submit');
@@ -228,6 +253,9 @@ export function InvoiceForm(props: {
             filling={busy === 'describe'}
             placeholder={t('inv.describePlaceholder')}
             hint={t('inv.describeHint')}
+            onVoice={() => {
+              voiceUsedRef.current = true;
+            }}
           />
         </div>
       )}

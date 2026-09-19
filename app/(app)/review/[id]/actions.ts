@@ -13,6 +13,8 @@ import {
   type PaymentMethod,
   type TxnType,
 } from '@/lib/domain';
+import { learnFromTxn } from '@/lib/txn-learning';
+import type { LearnMeta } from '@/lib/corrections';
 
 export interface SaveTransactionInput {
   documentId: string | null; // null for manual entries (no scanned document)
@@ -39,7 +41,10 @@ export type SaveResult =
   | { error: 'save'; message: string }
   | void;
 
-export async function saveTransaction(input: SaveTransactionInput): Promise<SaveResult> {
+export async function saveTransaction(
+  input: SaveTransactionInput,
+  learn?: LearnMeta
+): Promise<SaveResult> {
   const { user, business } = await getSessionContext();
   if (!user || !business) return { error: 'auth', message: 'Your session has expired. Please sign in again.' };
 
@@ -81,6 +86,9 @@ export async function saveTransaction(input: SaveTransactionInput): Promise<Save
       .eq('id', input.documentId);
     if (docErr) console.error('[saveTransaction] documents update failed:', docErr);
   }
+
+  // Learning loop: capture corrections + reinforce memory (best-effort).
+  await learnFromTxn(supabase, business.id, input, learn);
 
   // Open the dashboard on the transaction's own month and flag the toast —
   // derived from the SAME date we stored, via the shared helper.

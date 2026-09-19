@@ -30,6 +30,8 @@ export function DescribeBox(props: {
   placeholder: string;
   hint: string;
   minLen?: number;
+  /** Fired when a voice transcript is inserted, so callers can tag the source. */
+  onVoice?: () => void;
 }) {
   const { t, locale } = useLocale();
   const min = props.minLen ?? 3;
@@ -189,6 +191,7 @@ export function DescribeBox(props: {
         setError(t('voice.noAudio'));
       } else {
         props.onChange(props.value.trim() ? `${props.value.trim()} ${text}` : text);
+        props.onVoice?.();
       }
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : t('voice.failed'));

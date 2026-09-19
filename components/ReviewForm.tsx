@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale } from '@/components/LocaleProvider';
 import { Check, AlertTriangle, ArrowLeftRight, Trash2 } from 'lucide-react';
@@ -10,6 +10,7 @@ import { fromIqd, toIqd, formatUsd, formatIqd, type Currency } from '@/lib/money
 import { saveTransaction } from '@/app/(app)/review/[id]/actions';
 import { updateTransaction, deleteTransaction } from '@/app/(app)/transactions/[id]/actions';
 import type { ParsedExpenseDraft } from '@/lib/expense-parse';
+import type { CorrectionSource, LearnMeta } from '@/lib/corrections';
 
 export interface ReviewLineItem {
   description: string;
@@ -43,10 +44,11 @@ export interface ReviewInitial {
   // 'edit' edits an existing transaction (shows Delete). Default 'scan'.
   mode?: 'scan' | 'manual' | 'edit';
   transactionId?: string | null; // required when mode === 'edit'
+  modelUsed?: string | null; // model that produced the scanned prefill (learning loop)
 }
 
 export function ReviewForm({ initial }: { initial: ReviewInitial }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const router = useRouter();
   const isDemo = useSearchParams().get('demo') === '1';
   const rate = initial.usdIqdRate;
@@ -74,6 +76,28 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
   const scanned = mode === 'scan';
   const isEdit = mode === 'edit';
 
+  // Learning loop: remember what the AI/prefill proposed, so save can diff it.
+  const voiceUsedRef = useRef(false);
+  const describeModelRef = useRef<string | null>(null);
+  function snapshotAi(): Record<string, string | null> {
+    return {
+      vendor: initial.vendor || null,
+      date: initial.date || null,
+      currency: initial.currency,
+      total: initial.total != null ? String(initial.total) : null,
+      category: initial.category,
+      payment_method: initial.paymentMethod,
+      type: initial.type,
+    };
+  }
+  const aiRef = useRef<{ source: CorrectionSource; modelUsed: string | null; ai: Record<string, string | null> } | null>(
+    mode === 'scan'
+      ? { source: 'scan', modelUsed: initial.modelUsed ?? null, ai: snapshotAi() }
+      : mode === 'edit'
+        ? { source: 'manual', modelUsed: null, ai: snapshotAi() }
+        : null
+  );
+
   const totalNum = parseFloat(total) || 0;
   const equivalent =
     currency === 'IQD'
@@ -100,7 +124,8 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
 
   const problemFlags = initial.flags.filter((f) => f.severity !== 'info');
 
-  // "Describe" (manual entry): parse a plain-language note into the fields.
+  // "Describe" (manual entry): parse a plain-language note into the fields, and
+  // remember what the parser proposed for correction capture on save.
   function applyDraft(dr: ParsedExpenseDraft) {
     if (dr.vendor) setVendor(dr.vendor);
     if (dr.total != null) setTotal(String(dr.total));
@@ -111,6 +136,20 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
       setPaymentMethod(dr.payment_method);
     }
     if (dr.date && /^\d{4}-\d{2}-\d{2}$/.test(dr.date)) setDate(dr.date);
+
+    aiRef.current = {
+      source: voiceUsedRef.current ? 'voice' : 'describe',
+      modelUsed: describeModelRef.current,
+      ai: {
+        vendor: dr.vendor ?? null,
+        date: dr.date ?? null,
+        currency: dr.currency ?? null,
+        total: dr.total != null ? String(dr.total) : null,
+        category: dr.category ?? null,
+        payment_method: dr.payment_method ?? null,
+        type: dr.type ?? null,
+      },
+    };
   }
 
   async function runDescribe() {
@@ -125,6 +164,7 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || t('exp.describeFailed'));
+      describeModelRef.current = data.model ?? null;
       applyDraft(data.draft as ParsedExpenseDraft);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('exp.describeFailed'));
@@ -149,11 +189,14 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
       lineItems: items,
       notes,
     };
+    const learn: LearnMeta | undefined = aiRef.current
+      ? { source: aiRef.current.source, language: locale, modelUsed: aiRef.current.modelUsed, ai: aiRef.current.ai }
+      : undefined;
     try {
       const res =
         isEdit && initial.transactionId
-          ? await updateTransaction(initial.transactionId, input)
-          : await saveTransaction(input);
+          ? await updateTransaction(initial.transactionId, input, learn)
+          : await saveTransaction(input, learn);
       if (res?.error === 'limit') {
         router.push('/upgrade');
       } else if (res?.error) {
@@ -240,6 +283,9 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
             filling={filling}
             placeholder={t('exp.describePlaceholder')}
             hint={t('exp.describeHint')}
+            onVoice={() => {
+              voiceUsedRef.current = true;
+            }}
           />
         </div>
       )}
