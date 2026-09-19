@@ -3,6 +3,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Category, PaymentMethod } from '@/lib/domain';
+import { correctedEntryCount, type CorrectionRow } from '@/lib/accuracy';
 
 export interface TxnRow {
   id: string;
@@ -101,6 +102,47 @@ export async function getRecurringOverrides(
 }
 
 /** Transactions whose occurred_on falls in [monthStart, nextMonthStart). */
+/** What the app learned this month, and how often the owner corrected it.
+ *  learned = memory rows touched (added or reinforced) in the window;
+ *  correctedEntries = distinct saves that needed a fix; totalEntries = entries
+ *  created in the window (transactions, excluding payment-linked, + invoices). */
+export async function getMonthlyLearning(
+  supabase: SupabaseClient,
+  monthStart: string,
+  nextMonthStart: string
+): Promise<{ learned: number; correctedEntries: number; totalEntries: number }> {
+  const head = { count: 'exact' as const, head: true };
+  const learnedIn = (table: string) =>
+    supabase.from(table).select('id', head).gte('updated_at', monthStart).lt('updated_at', nextMonthStart);
+
+  const [aliases, phrases, vocab, corr, txns, invoices] = await Promise.all([
+    learnedIn('client_aliases'),
+    learnedIn('item_phrases'),
+    learnedIn('category_vocab'),
+    supabase
+      .from('corrections')
+      .select('created_at')
+      .gte('created_at', monthStart)
+      .lt('created_at', nextMonthStart),
+    supabase
+      .from('transactions')
+      .select('id', head)
+      .is('invoice_id', null)
+      .gte('created_at', monthStart)
+      .lt('created_at', nextMonthStart),
+    supabase
+      .from('invoices')
+      .select('id', head)
+      .gte('created_at', monthStart)
+      .lt('created_at', nextMonthStart),
+  ]);
+
+  const learned = (aliases.count ?? 0) + (phrases.count ?? 0) + (vocab.count ?? 0);
+  const correctedEntries = correctedEntryCount(((corr.data as CorrectionRow[]) ?? []));
+  const totalEntries = (txns.count ?? 0) + (invoices.count ?? 0);
+  return { learned, correctedEntries, totalEntries };
+}
+
 export async function getMonthTransactions(
   supabase: SupabaseClient,
   monthStart: string,

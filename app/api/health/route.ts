@@ -20,6 +20,8 @@ const OPTIONAL = [
   'OPENAI_TRANSCRIBE_MODEL',
   'ELEVENLABS_API_KEY',
   'ELEVENLABS_TRANSCRIBE_MODEL',
+  'ELEVENLABS_BIASING',
+  'ADMIN_TOKEN',
 ] as const;
 
 export async function GET() {

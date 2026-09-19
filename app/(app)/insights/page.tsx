@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getSessionContext } from '@/lib/session';
 import { createClient } from '@/lib/supabase/server';
-import { getTransactionsBetween, getRecurringOverrides } from '@/lib/queries';
+import { getTransactionsBetween, getRecurringOverrides, getMonthlyLearning } from '@/lib/queries';
 import { getInvoiceSummaries } from '@/lib/invoice-queries';
 import { computeInsights, type TxnLike } from '@/lib/insights';
 import { invoiceStats } from '@/lib/invoices';
@@ -23,13 +23,14 @@ export default async function InsightsPage({
   const month = isMonth(m) ? m : currentMonth();
   const months = lastMonths(month, 6);
   const windowStart = `${months[0]}-01`;
-  const { nextStart, prev, next } = monthRange(month);
+  const { start: monthStart, nextStart, prev, next } = monthRange(month);
 
   const supabase = await createClient();
-  const [txns, overrides, invSummaries] = await Promise.all([
+  const [txns, overrides, invSummaries, learning] = await Promise.all([
     getTransactionsBetween(supabase, windowStart, nextStart),
     getRecurringOverrides(supabase),
     getInvoiceSummaries(supabase),
+    getMonthlyLearning(supabase, monthStart, nextStart),
   ]);
 
   const insights = computeInsights(txns as TxnLike[], {
@@ -49,6 +50,7 @@ export default async function InsightsPage({
       usdIqdRate={business.usd_iqd_rate}
       insights={insights}
       receivables={receivables}
+      learning={learning}
     />
   );
 }

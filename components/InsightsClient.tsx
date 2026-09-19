@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, AlertTriangle, ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, AlertTriangle, ArrowUp, ArrowDown, Minus, Sparkles } from 'lucide-react';
 import { useLocale } from '@/components/LocaleProvider';
 import { BottomNav } from '@/components/BottomNav';
 import { CategoryIcon } from '@/components/icons';
@@ -20,6 +20,7 @@ export function InsightsClient(props: {
   usdIqdRate: number;
   insights: Insights;
   receivables: { owed: number; overdue: number; avgDaysToPay: number | null } | null;
+  learning: { learned: number; correctedEntries: number; totalEntries: number };
 }) {
   const { t, locale } = useLocale();
   const router = useRouter();
@@ -61,6 +62,27 @@ export function InsightsClient(props: {
             <ChevronRight size={20} className="rtl:-scale-x-100" />
           </button>
         </div>
+
+        {/* Learning loop: what the app learned and how often you corrected it */}
+        {(() => {
+          const l = props.learning;
+          const quiet = l.learned === 0 && l.totalEntries === 0;
+          const text = quiet
+            ? t('ins.learningEmpty')
+            : t('ins.learningLine')
+                .replace('{learned}', String(l.learned))
+                .replace('{corrected}', String(l.correctedEntries))
+                .replace('{total}', String(l.totalEntries));
+          return (
+            <section className="flex items-start gap-2 rounded-lg border border-brand/20 bg-brand/5 p-3">
+              <Sparkles size={18} className="mt-0.5 shrink-0 text-brand" />
+              <div>
+                <p className="text-xs font-semibold text-brand">{t('ins.learningTitle')}</p>
+                <p className="mt-0.5 text-sm text-slate-600">{text}</p>
+              </div>
+            </section>
+          );
+        })()}
 
         {/* 1. This vs last month */}
         <section className="grid grid-cols-3 gap-2">

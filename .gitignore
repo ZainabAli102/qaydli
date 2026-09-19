@@ -19,6 +19,9 @@ next-env.d.ts
 # vercel
 .vercel
 
+# learning-loop exports (anonymized training dumps — never commit)
+/exports/
+
 # typescript
 *.tsbuildinfo
 
