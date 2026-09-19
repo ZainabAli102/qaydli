@@ -2,7 +2,7 @@ import { redirect, notFound } from 'next/navigation';
 import { getSessionContext } from '@/lib/session';
 import { createClient } from '@/lib/supabase/server';
 import { getVendorMemory } from '@/lib/queries';
-import { suggestCategory, isCategory, type Category, type PaymentMethod } from '@/lib/domain';
+import { resolveCategory, type PaymentMethod } from '@/lib/domain';
 import { ReviewForm, type ReviewInitial } from '@/components/ReviewForm';
 import type { ReceiptResult } from '@/lib/engine/types';
 
@@ -39,12 +39,13 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
   const vendor = val(r.vendor, '') || val(r.vendor_latin, '');
   const memory = await getVendorMemory(supabase, vendor || null);
 
-  // Category: vendor memory first, then the engine's AI suggestion, then a
-  // keyword guess. Mark it "suggested" when it came from memory or the model.
-  const aiCategory = isCategory(r.category?.value) ? (r.category!.value as Category) : null;
-  const suggestedCategory: Category =
-    memory?.category ?? aiCategory ?? suggestCategory(`${vendor} ${val(r.notes, '')}`);
-  const categorySuggested = !!(memory?.category || aiCategory);
+  // Category: vendor memory → model suggestion → keyword guess → 'other'.
+  // Every source is validated, so a retired/misspelled slug never blanks it.
+  const cat = resolveCategory({
+    memory: memory?.category,
+    model: r.category?.value,
+    text: `${vendor} ${val(r.notes, '')}`,
+  });
 
   const pmRaw = memory?.payment_method ?? (val(r.payment_method, '') as PaymentMethod);
   const paymentMethod: PaymentMethod = pmRaw || 'cash';
@@ -72,12 +73,12 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
     })),
     notes: val(r.notes, ''),
     flags: r.flags ?? [],
-    category: suggestedCategory,
-    categorySuggested,
+    category: cat.category,
+    categorySuggested: cat.suggested,
     paymentMethod,
     type: 'expense',
     mode: 'scan',
-    fromMemory: !!memory,
+    fromMemory: cat.fromMemory,
     conf: {
       vendor: conf(r.vendor),
       date: conf(r.date),

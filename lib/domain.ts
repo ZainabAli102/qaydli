@@ -71,4 +71,28 @@ export function suggestCategory(text: string | null | undefined): Category {
   return 'other';
 }
 
+export interface CategoryResolution {
+  category: Category; // ALWAYS a valid, non-empty category
+  suggested: boolean; // true when it came from vendor memory or the model
+  fromMemory: boolean; // true when it came from vendor memory
+}
+
+/**
+ * Resolve the Review category from all sources, always returning a VALID slug
+ * so the <select> can never render empty:
+ *   vendor memory → model suggestion → keyword guess → 'other'.
+ * Every source is validated against the current category list, so a retired or
+ * misspelled slug (e.g. an old 'office_fitout') is ignored instead of blanking
+ * the field. The "suggested" chip shows only for memory/model, not the guess.
+ */
+export function resolveCategory(opts: {
+  memory?: string | null;
+  model?: string | null;
+  text?: string | null;
+}): CategoryResolution {
+  if (isCategory(opts.memory)) return { category: opts.memory, suggested: true, fromMemory: true };
+  if (isCategory(opts.model)) return { category: opts.model, suggested: true, fromMemory: false };
+  return { category: suggestCategory(opts.text), suggested: false, fromMemory: false };
+}
+
 export const FREE_TRIAL_LIMIT = 10;

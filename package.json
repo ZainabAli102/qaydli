@@ -13,7 +13,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test:engine": "tsx tests/run-engine.ts",
-    "test:dates": "tsx tests/dates.test.ts"
+    "test:dates": "tsx tests/dates.test.ts",
+    "test:category": "tsx tests/category.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",

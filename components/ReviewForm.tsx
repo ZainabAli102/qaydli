@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale } from '@/components/LocaleProvider';
-import { CATEGORIES, PAYMENT_METHODS, type Category, type PaymentMethod, type TxnType } from '@/lib/domain';
+import { CATEGORIES, PAYMENT_METHODS, isCategory, type Category, type PaymentMethod, type TxnType } from '@/lib/domain';
 import { fromIqd, toIqd, formatUsd, formatIqd, type Currency } from '@/lib/money';
 import { saveTransaction } from '@/app/(app)/review/[id]/actions';
 import { updateTransaction, deleteTransaction } from '@/app/(app)/transactions/[id]/actions';
@@ -54,7 +54,10 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
   const [currency, setCurrency] = useState<Currency>(initial.currency);
   const [total, setTotal] = useState(initial.total != null ? String(initial.total) : '');
   const [type, setType] = useState<TxnType>(initial.type);
-  const [category, setCategory] = useState<Category>(initial.category);
+  // Coerce to a valid slug so the <select> always matches an option (never blank).
+  const [category, setCategory] = useState<Category>(
+    isCategory(initial.category) ? initial.category : 'other'
+  );
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(initial.paymentMethod);
   const [items, setItems] = useState<ReviewLineItem[]>(initial.lineItems);
   const [notes] = useState(initial.notes);
