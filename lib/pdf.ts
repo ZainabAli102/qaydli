@@ -1,11 +1,15 @@
-// HTML → PDF via headless Chromium (puppeteer-core). Kept server-only.
+// HTML → PDF via headless Chromium (puppeteer-core). Server-only.
 //
-// The Chromium binary is resolved at runtime, in order:
-//   1. CHROMIUM_EXECUTABLE_PATH (set this on Vercel — e.g. @sparticuz/chromium)
-//   2. PLAYWRIGHT_BROWSERS_PATH/chromium-*/chrome-linux/chrome (dev containers)
-//   3. common system locations
-// If none launches, htmlToPdf throws PdfUnavailable; callers surface a clear
-// message and fall back to the public HTML invoice (which needs no browser).
+// Two launch paths, chosen at runtime:
+//   • Serverless (Vercel / AWS Lambda): @sparticuz/chromium ships a Chromium
+//     build sized for the function; its brotli binary decompresses to /tmp at
+//     runtime, so it doesn't count against the bundle size.
+//   • Local dev / containers: a system or Playwright Chromium, resolved from
+//     CHROMIUM_EXECUTABLE_PATH, the Playwright browsers dir, or common paths.
+//
+// CHROMIUM_EXECUTABLE_PATH, when set, always wins (both paths honour it).
+// If no browser can be launched, htmlToPdf throws PdfUnavailable; callers
+// surface a clear message and fall back to the public HTML invoice.
 
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -15,6 +19,11 @@ export class PdfUnavailable extends Error {
     super(message);
     this.name = 'PdfUnavailable';
   }
+}
+
+/** True when running in a Vercel/Lambda serverless function. */
+function isServerless(): boolean {
+  return Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 }
 
 function fromPlaywright(): string | null {
@@ -31,7 +40,7 @@ function fromPlaywright(): string | null {
   return null;
 }
 
-function resolveChromium(): string {
+function resolveLocalChromium(): string {
   const candidates = [
     process.env.CHROMIUM_EXECUTABLE_PATH,
     fromPlaywright(),
@@ -46,14 +55,40 @@ function resolveChromium(): string {
   );
 }
 
+interface LaunchConfig {
+  executablePath: string;
+  args: string[];
+  headless: boolean;
+}
+
+async function launchConfig(): Promise<LaunchConfig> {
+  const baseArgs = ['--no-sandbox', '--disable-setuid-sandbox', '--font-render-hinting=none'];
+
+  if (isServerless() && !process.env.CHROMIUM_EXECUTABLE_PATH) {
+    // Serverless: use the @sparticuz Chromium build.
+    const chromium = (await import('@sparticuz/chromium')).default;
+    const executablePath = await chromium.executablePath();
+    if (!executablePath) {
+      throw new PdfUnavailable('@sparticuz/chromium did not provide an executable path.');
+    }
+    return {
+      executablePath,
+      args: [...chromium.args, '--font-render-hinting=none'],
+      headless: true,
+    };
+  }
+
+  return { executablePath: resolveLocalChromium(), args: baseArgs, headless: true };
+}
+
 export async function htmlToPdf(html: string): Promise<Buffer> {
-  const executablePath = resolveChromium();
+  const cfg = await launchConfig();
   const puppeteer = (await import('puppeteer-core')).default;
 
   const browser = await puppeteer.launch({
-    executablePath,
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--font-render-hinting=none'],
+    executablePath: cfg.executablePath,
+    headless: cfg.headless,
+    args: cfg.args,
   });
   try {
     const page = await browser.newPage();

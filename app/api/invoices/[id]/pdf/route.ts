@@ -10,6 +10,8 @@ import { isLocale, defaultLocale } from '@/lib/i18n';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+// PDF rendering can cold-start Chromium; give the function headroom.
+export const maxDuration = 30;
 
 // GET /api/invoices/[id]/pdf?lang=ar
 // Renders the invoice to PDF, stores it in the private bucket (pdf_path), and

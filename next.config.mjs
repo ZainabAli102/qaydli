@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Keep the headless-Chromium packages out of the webpack bundle so Vercel's
+  // file tracer includes them (and @sparticuz's runtime assets) correctly.
+  serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
   // Service worker and manifest are served from /public; no build-time PWA plugin
   // is used so the config stays compatible with the App Router on Next 15.
   async headers() {
