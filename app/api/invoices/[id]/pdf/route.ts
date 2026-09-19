@@ -33,7 +33,7 @@ export async function GET(
 
   const { data: biz } = await supabase
     .from('businesses')
-    .select('name, phone, address, logo_path, payment_instructions')
+    .select('name, phone, address, email, tax_number, accent_color, invoice_footer, logo_path, payment_instructions')
     .eq('id', business.id)
     .maybeSingle();
 
@@ -58,11 +58,15 @@ export async function GET(
     total: invoice.total,
     paid: invoice.paid,
     notes: invoice.notes,
+    accent: biz?.accent_color ?? null,
     business: {
       name: biz?.name ?? business.name,
       phone: biz?.phone ?? null,
       address: biz?.address ?? null,
+      email: biz?.email ?? null,
+      taxNumber: biz?.tax_number ?? null,
       paymentInstructions: biz?.payment_instructions ?? null,
+      footer: biz?.invoice_footer ?? null,
       logoUrl,
     },
     client: {

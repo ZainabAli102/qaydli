@@ -301,6 +301,7 @@ const en: Record<string, string> = {
   'inv.invoiceNo': 'Invoice',
   'inv.date': 'Date',
   'inv.due': 'Due',
+  'inv.taxNumber': 'Tax / Reg. no.',
   'inv.paymentInstructions': 'Payment instructions',
   'inv.balanceDue': 'Balance due',
   'inv.publicIntro': 'Invoice from',
@@ -329,6 +330,16 @@ const en: Record<string, string> = {
   'settings.save': 'Save',
   'settings.saved': 'Saved',
   'settings.saving': 'Saving…',
+  // invoice look
+  'settings.invoiceLook': 'Invoice look',
+  'settings.invoiceLookHint': 'How your invoices and public links appear to clients.',
+  'settings.email': 'Email',
+  'settings.taxNumber': 'Tax / registration number',
+  'settings.accentColor': 'Accent color',
+  'settings.customColor': 'Custom',
+  'settings.footerNote': 'Footer note',
+  'settings.footerNoteHint': 'Shown at the bottom — e.g. payment terms or a thank-you line.',
+  'settings.preview': 'Preview',
 };
 
 const ar: Record<string, string> = {
@@ -591,6 +602,7 @@ const ar: Record<string, string> = {
   'inv.invoiceNo': 'فاتورة',
   'inv.date': 'التاريخ',
   'inv.due': 'الاستحقاق',
+  'inv.taxNumber': 'الرقم الضريبي / التسجيل',
   'inv.paymentInstructions': 'تعليمات الدفع',
   'inv.balanceDue': 'المبلغ المتبقي',
   'inv.publicIntro': 'فاتورة من',
@@ -616,6 +628,15 @@ const ar: Record<string, string> = {
   'settings.save': 'حفظ',
   'settings.saved': 'تم الحفظ',
   'settings.saving': 'جارٍ الحفظ…',
+  'settings.invoiceLook': 'مظهر الفاتورة',
+  'settings.invoiceLookHint': 'كيف تظهر فواتيرك وروابطك العامة للعملاء.',
+  'settings.email': 'البريد الإلكتروني',
+  'settings.taxNumber': 'الرقم الضريبي / التسجيل',
+  'settings.accentColor': 'اللون المميّز',
+  'settings.customColor': 'مخصّص',
+  'settings.footerNote': 'ملاحظة التذييل',
+  'settings.footerNoteHint': 'تظهر في الأسفل — مثل شروط الدفع أو عبارة شكر.',
+  'settings.preview': 'معاينة',
 };
 
 const ckb: Record<string, string> = {
@@ -878,6 +899,7 @@ const ckb: Record<string, string> = {
   'inv.invoiceNo': 'فاکتۆر',
   'inv.date': 'بەروار',
   'inv.due': 'کاتی',
+  'inv.taxNumber': 'ژمارەی باج / تۆمار',
   'inv.paymentInstructions': 'ڕێنمایی پارەدان',
   'inv.balanceDue': 'ماوەی پارە',
   'inv.publicIntro': 'فاکتۆر لە',
@@ -903,6 +925,15 @@ const ckb: Record<string, string> = {
   'settings.save': 'پاشەکەوت',
   'settings.saved': 'پاشەکەوتکرا',
   'settings.saving': 'پاشەکەوت…',
+  'settings.invoiceLook': 'ڕووکاری فاکتۆر',
+  'settings.invoiceLookHint': 'چۆن فاکتۆر و بەستەرە گشتییەکانت بۆ کڕیارەکان دەردەکەون.',
+  'settings.email': 'ئیمەیڵ',
+  'settings.taxNumber': 'ژمارەی باج / تۆمار',
+  'settings.accentColor': 'ڕەنگی سەرەکی',
+  'settings.customColor': 'دڵخواز',
+  'settings.footerNote': 'تێبینی ژێرەوە',
+  'settings.footerNoteHint': 'لە خوارەوە دەردەکەوێت — وەک مەرجەکانی پارەدان یان دەربڕینی سوپاس.',
+  'settings.preview': 'پێشبینین',
 };
 
 export const dictionaries: Record<Locale, Record<string, string>> = { en, ar, ckb };

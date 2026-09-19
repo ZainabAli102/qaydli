@@ -13,7 +13,9 @@ export default async function SettingsPage() {
   const supabase = await createClient();
   const { data: biz } = await supabase
     .from('businesses')
-    .select('name, phone, address, logo_path, payment_instructions, usd_iqd_rate')
+    .select(
+      'name, phone, address, email, tax_number, accent_color, invoice_footer, logo_path, payment_instructions, usd_iqd_rate'
+    )
     .eq('id', business.id)
     .maybeSingle();
 
@@ -30,6 +32,10 @@ export default async function SettingsPage() {
       name={biz?.name ?? business.name}
       phone={biz?.phone ?? ''}
       address={biz?.address ?? ''}
+      email={biz?.email ?? ''}
+      taxNumber={biz?.tax_number ?? ''}
+      accentColor={biz?.accent_color ?? '#0f766e'}
+      footer={biz?.invoice_footer ?? ''}
       paymentInstructions={biz?.payment_instructions ?? ''}
       usdRate={biz?.usd_iqd_rate ?? business.usd_iqd_rate}
       logoUrl={logoUrl}

@@ -4,6 +4,32 @@
 
 export type InvoiceCurrency = 'IQD' | 'USD';
 
+/** Brand teal — the default invoice accent. */
+export const DEFAULT_ACCENT = '#0f766e';
+
+/** Preset accent swatches offered in Settings (owner can also type a hex). */
+export const ACCENT_PRESETS = [
+  '#0f766e', // teal (brand)
+  '#2563eb', // blue
+  '#7c3aed', // violet
+  '#db2777', // pink
+  '#dc2626', // red
+  '#ea580c', // orange
+  '#ca8a04', // gold
+  '#16a34a', // green
+  '#0f172a', // slate/near-black
+] as const;
+
+/** Validate/normalise a hex colour, else fall back. Accepts #rgb or #rrggbb. */
+export function normalizeHex(v: string | null | undefined, fallback = DEFAULT_ACCENT): string {
+  const s = (v ?? '').trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(s)) return s.toLowerCase();
+  if (/^#[0-9a-fA-F]{3}$/.test(s)) {
+    return ('#' + s.slice(1).split('').map((c) => c + c).join('')).toLowerCase();
+  }
+  return fallback;
+}
+
 /** Stored base status. 'overdue' is derived on read, never persisted. */
 export type InvoiceStatus = 'draft' | 'sent' | 'partial' | 'paid';
 export type DisplayStatus = InvoiceStatus | 'overdue';

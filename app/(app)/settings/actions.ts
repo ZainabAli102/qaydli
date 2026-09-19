@@ -3,12 +3,17 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getSessionContext } from '@/lib/session';
+import { normalizeHex } from '@/lib/invoices';
 
 export type SettingsResult = { ok: true } | { error: string };
 
 export async function updateSettings(input: {
   phone: string;
   address: string;
+  email: string;
+  taxNumber: string;
+  accentColor: string;
+  footer: string;
   paymentInstructions: string;
   usdRate: number;
 }): Promise<SettingsResult> {
@@ -21,6 +26,10 @@ export async function updateSettings(input: {
     .update({
       phone: input.phone.trim() || null,
       address: input.address.trim() || null,
+      email: input.email.trim() || null,
+      tax_number: input.taxNumber.trim() || null,
+      accent_color: normalizeHex(input.accentColor),
+      invoice_footer: input.footer.trim() || null,
       payment_instructions: input.paymentInstructions.trim() || null,
       usd_iqd_rate: input.usdRate > 0 ? input.usdRate : business.usd_iqd_rate,
     })

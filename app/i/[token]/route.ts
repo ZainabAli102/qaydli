@@ -23,7 +23,7 @@ export async function GET(
   const { data: inv } = await supabase
     .from('invoices')
     .select(
-      'id, business_id, number, currency, issue_date, due_date, status, items, subtotal, discount, total, notes, client_id, businesses(name, phone, address, logo_path, payment_instructions), clients(name, phone, email)'
+      'id, business_id, number, currency, issue_date, due_date, status, items, subtotal, discount, total, notes, client_id, businesses(name, phone, address, email, tax_number, accent_color, invoice_footer, logo_path, payment_instructions), clients(name, phone, email)'
     )
     .eq('public_token', token)
     .maybeSingle();
@@ -39,7 +39,17 @@ export async function GET(
   const paid = ((pays ?? []) as Array<{ amount: number }>).reduce((s, p) => s + Number(p.amount), 0);
 
   const biz = (Array.isArray(inv.businesses) ? inv.businesses[0] : inv.businesses) as
-    | { name: string; phone: string | null; address: string | null; logo_path: string | null; payment_instructions: string | null }
+    | {
+        name: string;
+        phone: string | null;
+        address: string | null;
+        email: string | null;
+        tax_number: string | null;
+        accent_color: string | null;
+        invoice_footer: string | null;
+        logo_path: string | null;
+        payment_instructions: string | null;
+      }
     | null;
   const client = (Array.isArray(inv.clients) ? inv.clients[0] : inv.clients) as
     | { name: string | null; phone: string | null; email: string | null }
@@ -66,11 +76,15 @@ export async function GET(
     total: Number(inv.total),
     paid,
     notes: inv.notes,
+    accent: biz?.accent_color ?? null,
     business: {
       name: biz?.name ?? '',
       phone: biz?.phone ?? null,
       address: biz?.address ?? null,
+      email: biz?.email ?? null,
+      taxNumber: biz?.tax_number ?? null,
       paymentInstructions: biz?.payment_instructions ?? null,
+      footer: biz?.invoice_footer ?? null,
       logoUrl,
     },
     client: {

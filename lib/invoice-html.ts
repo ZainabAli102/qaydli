@@ -5,7 +5,7 @@
 
 import { t, dir, type Locale } from '@/lib/i18n';
 import { formatMoney, type Currency } from '@/lib/money';
-import { lineTotal, type DisplayStatus, type InvoiceItem } from '@/lib/invoices';
+import { lineTotal, normalizeHex, DEFAULT_ACCENT, type DisplayStatus, type InvoiceItem } from '@/lib/invoices';
 
 export interface InvoiceHtmlData {
   locale: Locale;
@@ -20,11 +20,16 @@ export interface InvoiceHtmlData {
   total: number;
   paid: number;
   notes: string | null;
+  /** Accent colour for table lines, headers and the total bar. */
+  accent?: string | null;
   business: {
     name: string;
     phone: string | null;
     address: string | null;
+    email?: string | null;
+    taxNumber?: string | null;
     paymentInstructions: string | null;
+    footer?: string | null;
     logoUrl: string | null;
   };
   client: { name: string | null; phone: string | null; email: string | null };
@@ -48,6 +53,7 @@ export function renderInvoiceHtml(d: InvoiceHtmlData): string {
   const tr = (k: string) => t(d.locale, k);
   const money = (n: number) => formatMoney(n, d.currency);
   const rtl = dir(d.locale) === 'rtl';
+  const accent = normalizeHex(d.accent, DEFAULT_ACCENT);
   const balance = Math.max(0, d.total - d.paid);
   const partiallyPaid = d.paid > 0 && balance > 0;
 
@@ -83,7 +89,7 @@ export function renderInvoiceHtml(d: InvoiceHtmlData): string {
   .top { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
   .brand { display: flex; gap: 12px; align-items: center; }
   .logo { height: 56px; width: auto; border-radius: 8px; object-fit: contain; }
-  .biz-name { font-size: 20px; font-weight: 700; color: #0f766e; }
+  .biz-name { font-size: 20px; font-weight: 700; color: ${accent}; }
   .muted { color: #64748b; font-size: 13px; }
   .doc { text-align: ${rtl ? 'left' : 'right'}; }
   .doc .number { font-size: 22px; font-weight: 700; }
@@ -94,17 +100,22 @@ export function renderInvoiceHtml(d: InvoiceHtmlData): string {
   .parties { display: flex; gap: 24px; margin: 24px 0 8px; }
   .label { font-size: 12px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
   table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-  th { text-align: ${rtl ? 'right' : 'left'}; font-size: 12px; color: #94a3b8; border-bottom: 2px solid #e2e8f0; padding: 8px 6px; }
+  th { text-align: ${rtl ? 'right' : 'left'}; font-size: 12px; color: ${accent}; border-bottom: 2px solid ${accent}; padding: 8px 6px; }
   td { padding: 10px 6px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
   td.num, th.num { text-align: ${rtl ? 'left' : 'right'}; white-space: nowrap; }
   .totals { margin-${rtl ? 'right' : 'left'}: auto; margin-top: 14px; width: 280px; }
   .totals .line { display: flex; justify-content: space-between; padding: 4px 0; }
-  .totals .grand { border-top: 2px solid #e2e8f0; margin-top: 6px; padding-top: 8px; font-size: 18px; font-weight: 700; }
-  .totals .grand .v { color: #0f766e; }
+  .totals .grand {
+    display: flex; justify-content: space-between; align-items: center;
+    background: ${accent}; color: #fff; margin-top: 8px; padding: 10px 12px;
+    border-radius: 8px; font-size: 18px; font-weight: 700;
+  }
+  .totals .grand .v { color: #fff; }
   .totals .balance { color: #dc2626; font-weight: 700; }
-  .pay { margin-top: 24px; padding: 12px 14px; background: #f8fafc; border-radius: 10px; }
+  .pay { margin-top: 24px; padding: 12px 14px; background: #f8fafc; border-radius: 10px; border-inline-start: 3px solid ${accent}; }
   .notes { margin-top: 16px; color: #475569; }
-  .foot { margin-top: 28px; text-align: center; color: #94a3b8; font-size: 12px; }
+  .foot-note { margin-top: 24px; text-align: center; color: #334155; font-size: 13px; }
+  .foot { margin-top: 12px; text-align: center; color: #94a3b8; font-size: 12px; }
   @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .sheet { padding: 0; } }
 </style>
 </head>
@@ -116,7 +127,9 @@ export function renderInvoiceHtml(d: InvoiceHtmlData): string {
         <div>
           <div class="biz-name">${esc(d.business.name)}</div>
           ${d.business.phone ? `<div class="muted">${esc(d.business.phone)}</div>` : ''}
+          ${d.business.email ? `<div class="muted">${esc(d.business.email)}</div>` : ''}
           ${d.business.address ? `<div class="muted">${esc(d.business.address)}</div>` : ''}
+          ${d.business.taxNumber ? `<div class="muted">${esc(tr('inv.taxNumber'))}: ${esc(d.business.taxNumber)}</div>` : ''}
         </div>
       </div>
       <div class="doc">
@@ -170,6 +183,7 @@ export function renderInvoiceHtml(d: InvoiceHtmlData): string {
         : ''
     }
 
+    ${d.business.footer ? `<div class="foot-note">${esc(d.business.footer)}</div>` : ''}
     <div class="foot">${esc(tr('inv.publicIntro'))} ${esc(d.business.name)}</div>
   </div>
 </body>
