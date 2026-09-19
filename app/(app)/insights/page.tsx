@@ -2,8 +2,10 @@ import { redirect } from 'next/navigation';
 import { getSessionContext } from '@/lib/session';
 import { createClient } from '@/lib/supabase/server';
 import { getTransactionsBetween, getRecurringOverrides } from '@/lib/queries';
+import { getInvoiceSummaries } from '@/lib/invoice-queries';
 import { computeInsights, type TxnLike } from '@/lib/insights';
-import { currentMonth, isMonth, monthRange, lastMonths } from '@/lib/dates';
+import { invoiceStats } from '@/lib/invoices';
+import { currentMonth, isMonth, monthRange, lastMonths, todayISO } from '@/lib/dates';
 import { InsightsClient } from '@/components/InsightsClient';
 
 export const dynamic = 'force-dynamic';
@@ -24,9 +26,10 @@ export default async function InsightsPage({
   const { nextStart, prev, next } = monthRange(month);
 
   const supabase = await createClient();
-  const [txns, overrides] = await Promise.all([
+  const [txns, overrides, invSummaries] = await Promise.all([
     getTransactionsBetween(supabase, windowStart, nextStart),
     getRecurringOverrides(supabase),
+    getInvoiceSummaries(supabase),
   ]);
 
   const insights = computeInsights(txns as TxnLike[], {
@@ -35,6 +38,9 @@ export default async function InsightsPage({
     recurringOverrides: overrides,
   });
 
+  const receivables =
+    invSummaries.length > 0 ? invoiceStats(invSummaries, todayISO()) : null;
+
   return (
     <InsightsClient
       month={month}
@@ -42,6 +48,7 @@ export default async function InsightsPage({
       nextMonth={next}
       usdIqdRate={business.usd_iqd_rate}
       insights={insights}
+      receivables={receivables}
     />
   );
 }

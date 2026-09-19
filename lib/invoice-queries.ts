@@ -184,6 +184,65 @@ export async function getInvoice(
   };
 }
 
+/**
+ * Portfolio summaries in integer IQD for Insights: each invoice's total and
+ * paid-so-far converted at its stored rate, plus the date it became fully paid
+ * (latest payment date for paid invoices) for "average days to get paid".
+ */
+export async function getInvoiceSummaries(
+  supabase: SupabaseClient
+): Promise<
+  Array<{
+    total: number;
+    paid: number;
+    status: InvoiceStatus;
+    dueDate: string | null;
+    issueDate: string;
+    paidOnDate: string | null;
+  }>
+> {
+  const [{ data: invs }, { data: pays }] = await Promise.all([
+    supabase
+      .from('invoices')
+      .select('id, currency, total, status, issue_date, due_date, usd_iqd_rate'),
+    supabase.from('invoice_payments').select('invoice_id, amount, paid_on'),
+  ]);
+
+  const paidSum: Record<string, number> = {};
+  const lastPaid: Record<string, string> = {};
+  for (const p of (pays ?? []) as Array<{ invoice_id: string; amount: number; paid_on: string }>) {
+    paidSum[p.invoice_id] = (paidSum[p.invoice_id] ?? 0) + Number(p.amount);
+    if (!lastPaid[p.invoice_id] || p.paid_on > lastPaid[p.invoice_id]) {
+      lastPaid[p.invoice_id] = p.paid_on;
+    }
+  }
+
+  return ((invs as Array<{
+    id: string;
+    currency: InvoiceCurrency;
+    total: number;
+    status: InvoiceStatus;
+    issue_date: string;
+    due_date: string | null;
+    usd_iqd_rate: number;
+  }>) ?? []).map((r) => {
+    const conv = invoiceIqd({
+      total: Number(r.total),
+      paid: paidSum[r.id] ?? 0,
+      currency: r.currency,
+      usd_iqd_rate: Number(r.usd_iqd_rate),
+    });
+    return {
+      total: conv.total,
+      paid: conv.paid,
+      status: r.status,
+      dueDate: r.due_date,
+      issueDate: r.issue_date,
+      paidOnDate: r.status === 'paid' ? (lastPaid[r.id] ?? null) : null,
+    };
+  });
+}
+
 /** An invoice's total and paid-so-far expressed in integer IQD (for insights). */
 export function invoiceIqd(row: {
   total: number;

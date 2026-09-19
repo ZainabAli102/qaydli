@@ -19,6 +19,7 @@ export function InsightsClient(props: {
   nextMonth: string;
   usdIqdRate: number;
   insights: Insights;
+  receivables: { owed: number; overdue: number; avgDaysToPay: number | null } | null;
 }) {
   const { t, locale } = useLocale();
   const router = useRouter();
@@ -73,6 +74,26 @@ export function InsightsClient(props: {
             good="up"
           />
         </section>
+
+        {/* Receivables (invoices) */}
+        {props.receivables && (
+          <section className="grid grid-cols-3 gap-2">
+            <Stat label={t('inv.owedToYou')} value={formatIqd(props.receivables.owed)} />
+            <Stat
+              label={t('inv.overdueAmount')}
+              value={formatIqd(props.receivables.overdue)}
+              tone={props.receivables.overdue > 0 ? 'bad' : undefined}
+            />
+            <Stat
+              label={t('inv.avgDaysToPay')}
+              value={
+                props.receivables.avgDaysToPay == null
+                  ? '—'
+                  : `${props.receivables.avgDaysToPay} ${t('inv.days')}`
+              }
+            />
+          </section>
+        )}
 
         {/* 2. 6-month trend */}
         <section className="rounded-lg border border-slate-200 bg-white p-3">
@@ -246,6 +267,15 @@ function DeltaChip({ delta, good }: { delta: number | null; good: 'up' | 'down' 
     <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${color}`}>
       <Arrow size={12} /> {Math.abs(rounded)}%
     </span>
+  );
+}
+
+function Stat({ label, value, tone }: { label: string; value: string; tone?: 'bad' }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-2.5">
+      <p className="mb-1 text-xs text-slate-500">{label}</p>
+      <p className={`text-sm font-bold ${tone === 'bad' ? 'text-red-500' : 'text-slate-800'}`}>{value}</p>
+    </div>
   );
 }
 

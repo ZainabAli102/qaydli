@@ -17,6 +17,7 @@ import {
   Wrench,
   Stethoscope,
   CircleDot,
+  Banknote,
   type LucideIcon,
 } from 'lucide-react';
 import type { Category } from '@/lib/domain';
@@ -44,6 +45,12 @@ export const CATEGORY_ICONS: Record<Category, { Icon: LucideIcon; color: string 
   other: { Icon: CircleDot, color: '#94a3b8' },
 };
 
+// Income slugs that aren't expense Categories (e.g. invoice sales) still get a
+// distinct glyph instead of the generic fallback.
+const EXTRA_ICONS: Record<string, { Icon: LucideIcon; color: string }> = {
+  sales: { Icon: Banknote, color: '#16a34a' },
+};
+
 /** A category glyph inside a small colored circle, for list rows. */
 export function CategoryIcon({
   category,
@@ -52,7 +59,10 @@ export function CategoryIcon({
   category: string | null | undefined;
   size?: number;
 }) {
-  const { Icon, color } = CATEGORY_ICONS[(category as Category) ?? 'other'] ?? CATEGORY_ICONS.other;
+  const { Icon, color } =
+    (category ? EXTRA_ICONS[category] : undefined) ??
+    CATEGORY_ICONS[(category as Category) ?? 'other'] ??
+    CATEGORY_ICONS.other;
   const box = size + 14;
   return (
     <span
