@@ -14,6 +14,7 @@ import {
   type TxnType,
 } from '@/lib/domain';
 import { learnFromTxn } from '@/lib/txn-learning';
+import { validateTotal } from '@/lib/validation';
 import type { LearnMeta } from '@/lib/corrections';
 
 export interface SaveTransactionInput {
@@ -47,6 +48,11 @@ export async function saveTransaction(
 ): Promise<SaveResult> {
   const { user, business } = await getSessionContext();
   if (!user || !business) return { error: 'auth', message: 'Your session has expired. Please sign in again.' };
+
+  // Guard against a zero/empty/negative total (transactions never allow zero).
+  if (!validateTotal(input.total).ok) {
+    return { error: 'save', message: 'Total must be greater than zero. Check the receipt and enter the amount.' };
+  }
 
   const supabase = await createClient();
 

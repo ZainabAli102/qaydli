@@ -7,6 +7,7 @@ import { toIqd } from '@/lib/money';
 import { typeToDirection } from '@/lib/domain';
 import { todayISO, monthOf } from '@/lib/dates';
 import { learnFromTxn } from '@/lib/txn-learning';
+import { validateTotal } from '@/lib/validation';
 import type { LearnMeta } from '@/lib/corrections';
 import type { SaveTransactionInput, SaveResult } from '@/app/(app)/review/[id]/actions';
 
@@ -18,6 +19,11 @@ export async function updateTransaction(
 ): Promise<SaveResult> {
   const { user, business } = await getSessionContext();
   if (!user || !business) return { error: 'auth', message: 'Your session has expired. Please sign in again.' };
+
+  // Guard against a zero/empty/negative total (transactions never allow zero).
+  if (!validateTotal(input.total).ok) {
+    return { error: 'save', message: 'Total must be greater than zero. Check the receipt and enter the amount.' };
+  }
 
   const supabase = await createClient();
   const amountIqd = toIqd(input.total, input.currency, business.usd_iqd_rate);

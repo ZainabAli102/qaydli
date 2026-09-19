@@ -7,6 +7,7 @@ import { getSessionContext } from '@/lib/session';
 import { getEntryCount } from '@/lib/queries';
 import { FREE_TRIAL_LIMIT } from '@/lib/domain';
 import { computeTotals, type InvoiceCurrency, type InvoiceItem } from '@/lib/invoices';
+import { validateTotal } from '@/lib/validation';
 import {
   recordCorrections,
   learnItemPhrases,
@@ -24,6 +25,8 @@ export interface CreateInvoiceInput {
   dueDate: string | null;
   notes: string;
   documentId: string | null; // scan origin, if any
+  // Owner explicitly allowed a 0 total (credit note / fully discounted invoice).
+  intentionalZero?: boolean;
   // Learning loop: what Describe/voice proposed, for corrections + client alias.
   learn?: {
     source: CorrectionSource;
@@ -78,6 +81,14 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<CreateIn
   if (!clientId) return { error: 'validation', message: 'Choose or add a client.' };
 
   const { subtotal, discount, total } = computeTotals(items, input.discount);
+
+  // Block a zero/empty/negative total unless the owner marked it intentional.
+  if (!validateTotal(total, { allowZero: input.intentionalZero === true }).ok) {
+    return {
+      error: 'validation',
+      message: 'Total is 0. Check the amounts, or mark the invoice as intentionally 0.',
+    };
+  }
 
   // Claim the next per-business number atomically.
   const { data: numData, error: numErr } = await supabase.rpc('next_invoice_number');

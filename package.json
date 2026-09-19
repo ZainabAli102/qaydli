@@ -19,6 +19,7 @@
     "test:invoices": "tsx tests/invoices.test.ts",
     "test:memory": "tsx tests/memory.test.ts",
     "test:accuracy": "tsx tests/accuracy.test.ts",
+    "test:validation": "tsx tests/validation.test.ts",
     "export:corrections": "tsx scripts/export-corrections.ts"
   },
   "dependencies": {

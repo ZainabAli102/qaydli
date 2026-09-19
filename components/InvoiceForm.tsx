@@ -7,6 +7,7 @@ import { useLocale } from '@/components/LocaleProvider';
 import { DescribeBox } from '@/components/DescribeBox';
 import { compressImage } from '@/lib/image-client';
 import { computeTotals, dueDateFrom, type InvoiceCurrency } from '@/lib/invoices';
+import { validateTotal } from '@/lib/validation';
 import { formatMoney } from '@/lib/money';
 import { receiptToDraft } from '@/lib/invoice-from-receipt';
 import type { ParsedInvoiceDraft } from '@/lib/invoice-parse';
@@ -56,6 +57,12 @@ export function InvoiceForm(props: {
   const [describeText, setDescribeText] = useState('');
   const [busy, setBusy] = useState<null | 'describe' | 'scan' | 'submit'>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Zero-total guard: an explicit 0 is allowed only when the owner ticks
+  // "intentionally 0" (a credit note or a fully discounted invoice).
+  const [intentionalZero, setIntentionalZero] = useState(false);
+  const [totalInvalid, setTotalInvalid] = useState(false);
+  const totalsRef = useRef<HTMLElement>(null);
 
   // Learning loop: remember what Describe/voice/scan proposed (client, currency).
   const voiceUsedRef = useRef(false);
@@ -181,6 +188,15 @@ export function InvoiceForm(props: {
       return;
     }
 
+    // Block a zero/empty/negative total unless the owner marked it intentional.
+    if (!validateTotal(totals.total, { allowZero: intentionalZero }).ok) {
+      setTotalInvalid(true);
+      setError(null);
+      totalsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    setTotalInvalid(false);
+
     const resolvedClientName = adding
       ? newName.trim()
       : props.clients.find((c) => c.id === clientId)?.name ?? null;
@@ -195,6 +211,7 @@ export function InvoiceForm(props: {
       dueDate: dueMode === 'none' ? null : dueDate,
       notes,
       documentId,
+      intentionalZero,
       learn: describeAiRef.current
         ? {
             source: describeSourceRef.current,
@@ -414,7 +431,12 @@ export function InvoiceForm(props: {
         </section>
 
         {/* Discount + totals */}
-        <section className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
+        <section
+          ref={totalsRef}
+          className={`scroll-mt-4 rounded-lg border bg-white p-3 text-sm ${
+            totalInvalid ? 'border-red-500' : 'border-slate-200'
+          }`}
+        >
           <div className="mb-2 flex items-center justify-between">
             <span className="text-slate-600">{t('inv.subtotal')}</span>
             <span className="font-medium text-slate-800">{formatMoney(totals.subtotal, currency)}</span>
@@ -423,7 +445,10 @@ export function InvoiceForm(props: {
             <span className="text-slate-600">{t('inv.discount')}</span>
             <input
               value={discount}
-              onChange={(e) => setDiscount(e.target.value)}
+              onChange={(e) => {
+                setDiscount(e.target.value);
+                if (totalInvalid) setTotalInvalid(false);
+              }}
               inputMode="decimal"
               placeholder="0"
               className="w-28 rounded-md border border-slate-300 px-2 py-1 text-end text-base focus:border-brand focus:outline-none"
@@ -431,8 +456,33 @@ export function InvoiceForm(props: {
           </label>
           <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-base">
             <span className="font-semibold text-slate-700">{t('inv.total')}</span>
-            <span className="font-bold text-brand">{formatMoney(totals.total, currency)}</span>
+            <span className={`font-bold ${totalInvalid ? 'text-red-600' : 'text-brand'}`}>
+              {formatMoney(totals.total, currency)}
+            </span>
           </div>
+
+          {/* Intentional-zero opt-in appears exactly when the total is 0. */}
+          {totals.total <= 0 && (
+            <label className="mt-2 flex items-start gap-2 border-t border-slate-100 pt-2">
+              <input
+                type="checkbox"
+                checked={intentionalZero}
+                onChange={(e) => {
+                  setIntentionalZero(e.target.checked);
+                  if (e.target.checked) setTotalInvalid(false);
+                }}
+                className="mt-0.5 h-4 w-4 accent-[#0f766e]"
+              />
+              <span>
+                <span className="font-medium text-slate-700">{t('inv.intentionalZero')}</span>
+                <span className="block text-xs text-slate-400">{t('inv.intentionalZeroHint')}</span>
+              </span>
+            </label>
+          )}
+
+          {totalInvalid && (
+            <p className="mt-2 text-xs font-medium text-red-600">{t('validation.totalZero')}</p>
+          )}
         </section>
 
         {/* Dates */}

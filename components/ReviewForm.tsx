@@ -7,6 +7,7 @@ import { Check, AlertTriangle, ArrowLeftRight, Trash2 } from 'lucide-react';
 import { DescribeBox } from '@/components/DescribeBox';
 import { CATEGORIES, PAYMENT_METHODS, isCategory, type Category, type PaymentMethod, type TxnType } from '@/lib/domain';
 import { fromIqd, toIqd, formatUsd, formatIqd, type Currency } from '@/lib/money';
+import { validateTotal } from '@/lib/validation';
 import { saveTransaction } from '@/app/(app)/review/[id]/actions';
 import { updateTransaction, deleteTransaction } from '@/app/(app)/transactions/[id]/actions';
 import type { ParsedExpenseDraft } from '@/lib/expense-parse';
@@ -68,7 +69,12 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
   const [notes] = useState(initial.notes);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [totalInvalid, setTotalInvalid] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // Blocked-save focus targets: scroll the photo (or the Total field) into view.
+  const imgRef = useRef<HTMLImageElement>(null);
+  const totalFieldRef = useRef<HTMLDivElement>(null);
   const [describeText, setDescribeText] = useState('');
   const [filling, setFilling] = useState(false);
 
@@ -174,6 +180,15 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
   }
 
   async function save() {
+    // Block a zero/empty/negative total: mark the field, turn the chip red, and
+    // bring the photo (or the Total field) into view so the owner can re-read it.
+    if (!validateTotal(totalNum).ok) {
+      setTotalInvalid(true);
+      setError(null);
+      (imgRef.current ?? totalFieldRef.current)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    setTotalInvalid(false);
     setBusy(true);
     setError(null);
     const input = {
@@ -249,6 +264,7 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
       {initial.imageUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
+          ref={imgRef}
           src={initial.imageUrl}
           alt="receipt"
           className="mb-4 max-h-64 w-full rounded-lg border border-slate-200 object-contain"
@@ -305,27 +321,41 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
         </div>
 
         {/* total + currency toggle */}
-        <Field label={t('review.total')} confidence={scanned ? initial.conf.total : undefined}>
-          <div className="flex gap-2">
-            <input
-              type="number"
-              inputMode="decimal"
-              className={inputCls}
-              value={total}
-              onChange={(e) => setTotal(e.target.value)}
-            />
-            <button
-              type="button"
-              onClick={switchCurrency}
-              className="flex shrink-0 items-center gap-1 rounded-md border border-brand px-3 py-2 text-sm font-semibold text-brand"
-            >
-              {currency} <ArrowLeftRight size={14} />
-            </button>
-          </div>
-          <span className="mt-1 block text-xs text-slate-500">
-            {currency === 'IQD' ? t('review.usdEquiv') : t('review.iqdEquiv')}: {equivalent}
-          </span>
-        </Field>
+        <div ref={totalFieldRef} className="scroll-mt-4">
+          <Field
+            label={t('review.total')}
+            confidence={scanned ? initial.conf.total : undefined}
+            invalid={totalInvalid}
+          >
+            <div className="flex gap-2">
+              <input
+                type="number"
+                inputMode="decimal"
+                aria-invalid={totalInvalid}
+                className={`${inputCls} ${totalInvalid ? 'border-red-500 focus:border-red-500' : ''}`}
+                value={total}
+                onChange={(e) => {
+                  setTotal(e.target.value);
+                  if (totalInvalid) setTotalInvalid(false);
+                }}
+              />
+              <button
+                type="button"
+                onClick={switchCurrency}
+                className="flex shrink-0 items-center gap-1 rounded-md border border-brand px-3 py-2 text-sm font-semibold text-brand"
+              >
+                {currency} <ArrowLeftRight size={14} />
+              </button>
+            </div>
+            {totalInvalid ? (
+              <span className="mt-1 block text-xs font-medium text-red-600">{t('validation.totalZero')}</span>
+            ) : (
+              <span className="mt-1 block text-xs text-slate-500">
+                {currency === 'IQD' ? t('review.usdEquiv') : t('review.iqdEquiv')}: {equivalent}
+              </span>
+            )}
+          </Field>
+        </div>
 
         {/* type toggle */}
         <div>
@@ -467,27 +497,33 @@ function Label({ children }: { children: React.ReactNode }) {
 function Field({
   label,
   confidence,
+  invalid,
   children,
 }: {
   label: string;
   confidence?: number;
+  invalid?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <label className="block">
       <span className="mb-1 flex items-center justify-between">
         <span className="text-sm font-medium text-slate-700">{label}</span>
-        {confidence !== undefined && <ConfidenceChip confidence={confidence} />}
+        {(invalid || confidence !== undefined) && (
+          <ConfidenceChip confidence={confidence ?? 0} invalid={invalid} />
+        )}
       </span>
       {children}
     </label>
   );
 }
 
-function ConfidenceChip({ confidence }: { confidence: number }) {
+function ConfidenceChip({ confidence, invalid }: { confidence: number; invalid?: boolean }) {
   const { t } = useLocale();
-  const [cls, label] =
-    confidence >= 0.9
+  // A blocked total overrides the confidence colour — the chip goes red.
+  const [cls, label] = invalid
+    ? ['bg-red-100 text-red-700', t('review.confCheck')]
+    : confidence >= 0.9
       ? ['bg-green-100 text-green-700', t('review.confHigh')]
       : confidence >= 0.6
         ? ['bg-amber-100 text-amber-700', t('review.confMed')]
