@@ -28,6 +28,11 @@ export function formatUsd(usd: number): string {
   return `$${rounded.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
 }
 
+/** Format an amount in its own currency: IQD (grouped, no decimals) or USD. */
+export function formatMoney(amount: number, currency: Currency): string {
+  return currency === 'USD' ? formatUsd(amount) : formatIqd(amount);
+}
+
 /** IQD with its USD equivalent alongside: "1,310,000 IQD (~$1,000)". */
 export function iqdWithUsd(iqd: number, usdIqdRate: number): string {
   const usd = fromIqd(iqd, 'USD', usdIqdRate);
