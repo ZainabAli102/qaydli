@@ -14,7 +14,13 @@ const REQUIRED = [
   'USD_IQD_RATE',
 ] as const;
 
-const OPTIONAL = ['ANTHROPIC_API_KEY', 'OPENAI_MODEL', 'OPENAI_TRANSCRIBE_MODEL'] as const;
+const OPTIONAL = [
+  'ANTHROPIC_API_KEY',
+  'OPENAI_MODEL',
+  'OPENAI_TRANSCRIBE_MODEL',
+  'ELEVENLABS_API_KEY',
+  'ELEVENLABS_TRANSCRIBE_MODEL',
+] as const;
 
 export async function GET() {
   const isSet = (name: string) => Boolean(process.env[name] && process.env[name]!.length > 0);

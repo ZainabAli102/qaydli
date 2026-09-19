@@ -178,7 +178,10 @@ export function DescribeBox(props: {
       fd.append('audio', blob, `voice.${ext}`);
       fd.append('lang', locale);
       fd.append('durationMs', String(durMs));
-      const res = await fetch('/api/transcribe', { method: 'POST', body: fd });
+      // Forward a ?provider= A/B flag from the page URL, if present.
+      const provider = new URLSearchParams(window.location.search).get('provider');
+      const url = provider ? `/api/transcribe?provider=${encodeURIComponent(provider)}` : '/api/transcribe';
+      const res = await fetch(url, { method: 'POST', body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || t('voice.failed'));
       const text = String(data.text ?? '').trim();
