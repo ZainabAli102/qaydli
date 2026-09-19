@@ -14,7 +14,7 @@ const REQUIRED = [
   'USD_IQD_RATE',
 ] as const;
 
-const OPTIONAL = ['ANTHROPIC_API_KEY', 'OPENAI_MODEL'] as const;
+const OPTIONAL = ['ANTHROPIC_API_KEY', 'OPENAI_MODEL', 'CHROMIUM_EXECUTABLE_PATH'] as const;
 
 export async function GET() {
   const isSet = (name: string) => Boolean(process.env[name] && process.env[name]!.length > 0);
