@@ -47,7 +47,7 @@ lib/
   session.ts            getSessionContext() — user + business on the server
   supabase/             browser client, server client, service client
   engine/               THE PURE ENGINE (see below)
-middleware.ts           Edge session refresh + route guard (fail-soft, @supabase/ssr only)
+app/(app)/layout.tsx    Server-side auth guard for the authed app (no middleware)
 app/api/health/route.ts Reports which required env var names are set (no secrets)
 supabase/migrations/    0001_init.sql (schema + RLS), 0002_storage.sql (bucket)
 tests/                  run-engine.ts harness + receipts/expected.json

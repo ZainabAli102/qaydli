@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useLocale } from '@/components/LocaleProvider';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { BottomNav } from '@/components/BottomNav';
-import { signOut } from '@/app/scan/actions';
+import { signOut } from '@/app/(app)/scan/actions';
 import { formatIqd, formatUsd, fromIqd } from '@/lib/money';
 import type { TxnRow } from '@/lib/queries';
 

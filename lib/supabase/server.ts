@@ -21,8 +21,9 @@ export async function createClient() {
               cookieStore.set(name, value, options)
             );
           } catch {
-            // Called from a Server Component where cookies are read-only; the
-            // middleware refreshes the session instead. Safe to ignore.
+            // Called from a Server Component, where cookies are read-only. Safe
+            // to ignore: Server Actions/Route Handlers write refreshed cookies,
+            // and the browser Supabase client keeps the session cookies fresh.
           }
         },
       },

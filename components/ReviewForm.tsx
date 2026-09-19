@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale } from '@/components/LocaleProvider';
 import { CATEGORIES, PAYMENT_METHODS, type Category, type PaymentMethod, type TxnType } from '@/lib/domain';
 import { fromIqd, toIqd, formatUsd, formatIqd, type Currency } from '@/lib/money';
-import { saveTransaction } from '@/app/review/[id]/actions';
+import { saveTransaction } from '@/app/(app)/review/[id]/actions';
 
 export interface ReviewLineItem {
   description: string;
