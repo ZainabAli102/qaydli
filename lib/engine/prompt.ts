@@ -21,6 +21,7 @@ export const OUTPUT_SHAPE = `{
   "paid_currency": { "value": "IQD|USD|null", "confidence": 0-1 },
   "remaining":     { "value": number|null, "confidence": 0-1 },
   "payment_method":{ "value": "string|null", "confidence": 0-1 },
+  "category":      { "value": "one of the category slugs below, or null", "confidence": 0-1 },
   "language":      { "value": "string|null", "confidence": 0-1 },
   "notes":         { "value": "string|null", "confidence": 0-1 },
   "flags": [ { "code": "string", "message": "string", "severity": "info|warn|error" } ]
@@ -45,6 +46,8 @@ Reading rules:
 - Document type: "voucher" is a slip headed سەند / وصل / "voucher" carrying a voucher number (common for furniture stores). "payment_receipt" is specifically a receipt confirming a payment (headed "Payment Receipt" / "وصل قبض" against an invoice). "invoice" (فاتورة/پسووڵە) itemises goods with a total. "receipt" is a point-of-sale till slip. Choose the closest; use "unknown" only if truly unclear.
 - Line items: capture description, qty, and unit_price exactly as printed. A quantity may be fractional (e.g. 0.5 kg). For line_total: if the row has an explicit line-total/amount column, use it; if the row shows only a unit price and a quantity, set line_total = unit_price × qty.
 - vendor: the business/shop name as printed. vendor_latin: the same name transliterated to Latin script (English spelling); if the name is already Latin, repeat it; null if you cannot read it.
+- category: classify what was bought/paid for into EXACTLY ONE of these slugs (output the slug, not the label). If unsure, use "other".
+    supplies (consumables, stationery), furniture, equipment_assets (machines, devices, tools, fixed assets), inventory (goods/stock for resale, raw materials), rent, salaries, utilities (electricity, water, internet, generator), fuel (petrol, diesel), transport (taxi, delivery, shipping), food_hospitality (restaurant, cafe, catering, hotel), marketing (ads, printing, design), software_subscriptions (SaaS, hosting, licences), professional_services (lawyer, accountant, consultant, engineer), bank_fees (bank/transfer/payment commissions), taxes_gov_fees (tax, customs, government fees), maintenance (repairs), medical_personal (pharmacy, clinic, personal), other.
 
 Conflicts: when two figures cannot both be true (e.g. a total shown as "$10" and also "15,000 IQD" with no exchange note, or a stated total that does not match the line items), DO NOT guess a reconciliation. Record both readings faithfully and add a flag (code "currency_conflict" or "total_mismatch") describing the conflict. Lower the confidence of the affected fields.
 

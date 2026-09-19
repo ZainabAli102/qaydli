@@ -150,6 +150,7 @@ export function parseReceiptResult(input: unknown): ReceiptResult {
     paid_currency: confident(o.paid_currency, asCurrencyOrNull),
     remaining: confident(o.remaining, toNumber),
     payment_method: confident(o.payment_method, asString),
+    category: confident(o.category, asString),
     language: confident(o.language, asString),
     notes: confident(o.notes, asString),
     flags: normalizeFlags(o.flags),

@@ -14,7 +14,7 @@ import {
 } from '@/lib/domain';
 
 export interface SaveTransactionInput {
-  documentId: string;
+  documentId: string | null; // null for manual entries (no scanned document)
   vendor: string;
   invoiceNumber: string;
   date: string; // ISO or ''
@@ -32,15 +32,21 @@ export interface SaveTransactionInput {
   notes: string;
 }
 
-export async function saveTransaction(
-  input: SaveTransactionInput
-): Promise<{ error: 'limit' | 'auth' | 'save' } | void> {
+export type SaveResult =
+  | { error: 'limit' }
+  | { error: 'auth'; message: string }
+  | { error: 'save'; message: string }
+  | void;
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+export async function saveTransaction(input: SaveTransactionInput): Promise<SaveResult> {
   const { user, business } = await getSessionContext();
-  if (!user || !business) return { error: 'auth' };
+  if (!user || !business) return { error: 'auth', message: 'Your session has expired. Please sign in again.' };
 
   const supabase = await createClient();
 
-  // Free-trial cap: block creating an 11th entry.
+  // Free-trial cap: block creating an 11th entry (manual or scanned).
   if ((await getEntryCount(supabase)) >= FREE_TRIAL_LIMIT) return { error: 'limit' };
 
   const amountIqd = toIqd(input.total, input.currency, business.usd_iqd_rate);
@@ -58,13 +64,25 @@ export async function saveTransaction(
     occurred_on: input.date || null,
     notes: input.notes || null,
   });
-  if (txnErr) return { error: 'save' };
+  if (txnErr) {
+    // Surface the real Supabase error to the caller — never fail silently.
+    console.error('[saveTransaction] insert failed:', txnErr);
+    return { error: 'save', message: txnErr.message || 'Could not save the transaction.' };
+  }
 
-  // Keep the owner's corrections next to the raw extraction.
-  await supabase
-    .from('documents')
-    .update({ corrections: input, status: 'reviewed' })
-    .eq('id', input.documentId);
+  // Keep the owner's corrections next to the raw extraction (scanned entries only).
+  if (input.documentId) {
+    const { error: docErr } = await supabase
+      .from('documents')
+      .update({ corrections: input, status: 'reviewed' })
+      .eq('id', input.documentId);
+    if (docErr) console.error('[saveTransaction] documents update failed:', docErr);
+  }
 
-  redirect('/dashboard');
+  // Open the dashboard on the transaction's own month and flag the toast.
+  const now = new Date();
+  const ym = input.date && /^\d{4}-\d{2}/.test(input.date)
+    ? input.date.slice(0, 7)
+    : `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+  redirect(`/dashboard?m=${ym}&saved=${ym}`);
 }

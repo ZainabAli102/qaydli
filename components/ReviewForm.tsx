@@ -15,7 +15,7 @@ export interface ReviewLineItem {
 }
 
 export interface ReviewInitial {
-  documentId: string;
+  documentId: string | null;
   imageUrl: string | null;
   usdIqdRate: number;
   vendor: string;
@@ -30,10 +30,12 @@ export interface ReviewInitial {
   notes: string;
   flags: Array<{ code: string; message: string; severity: string }>;
   category: Category;
+  categorySuggested: boolean;
   paymentMethod: PaymentMethod;
   type: TxnType;
   fromMemory: boolean;
   conf: { vendor: number; date: number; total: number; currency: number };
+  manual?: boolean; // manual entry: no photo, no confidence chips, no maths note
 }
 
 export function ReviewForm({ initial }: { initial: ReviewInitial }) {
@@ -101,10 +103,10 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
       if (res?.error === 'limit') {
         router.push('/upgrade');
       } else if (res?.error) {
-        setError(res.error);
+        setError('message' in res ? res.message : res.error);
         setBusy(false);
       }
-      // success path: the action redirects to /dashboard.
+      // success path: the action redirects to /dashboard?m=…&saved=…
     } catch (err) {
       // A thrown NEXT_REDIRECT is normal; only surface real errors.
       const msg = err instanceof Error ? err.message : String(err);
@@ -118,7 +120,9 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
   return (
     <main className="mx-auto max-w-md px-4 py-6 pb-28">
       <header className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-brand">{t('review.title')}</h1>
+        <h1 className="text-xl font-bold text-brand">
+          {initial.manual ? t('manual.title') : t('review.title')}
+        </h1>
         {isDemo && (
           <span className="rounded bg-amber-200 px-2 py-0.5 text-xs font-semibold text-amber-800">
             {t('demo.badge')}
@@ -135,8 +139,8 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
         />
       )}
 
-      {/* maths note + flags */}
-      {problemFlags.length === 0 ? (
+      {/* maths note + flags (scanned entries only) */}
+      {initial.manual ? null : problemFlags.length === 0 ? (
         <p className="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">✓ {t('review.mathsOk')}</p>
       ) : (
         <div className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
@@ -150,12 +154,12 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
       )}
 
       <div className="space-y-4">
-        <Field label={t('review.vendor')} confidence={initial.conf.vendor}>
+        <Field label={t('review.vendor')} confidence={initial.manual ? undefined : initial.conf.vendor}>
           <input className={inputCls} value={vendor} onChange={(e) => setVendor(e.target.value)} />
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label={t('review.date')} confidence={initial.conf.date}>
+          <Field label={t('review.date')} confidence={initial.manual ? undefined : initial.conf.date}>
             <input type="date" className={inputCls} value={date} onChange={(e) => setDate(e.target.value)} />
           </Field>
           <Field label={t('review.invoiceNumber')}>
@@ -164,7 +168,7 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
         </div>
 
         {/* total + currency toggle */}
-        <Field label={t('review.total')} confidence={initial.conf.total}>
+        <Field label={t('review.total')} confidence={initial.manual ? undefined : initial.conf.total}>
           <div className="flex gap-2">
             <input
               type="number"
@@ -209,7 +213,12 @@ export function ReviewForm({ initial }: { initial: ReviewInitial }) {
         <div>
           <Label>
             {t('review.category')}
-            {initial.fromMemory && <span className="ms-2 text-xs text-brand">★</span>}
+            {initial.categorySuggested && (
+              <span className="ms-2 rounded-full bg-brand/10 px-2 py-0.5 text-xs font-medium text-brand">
+                {initial.fromMemory ? '★ ' : ''}
+                {t('review.suggested')}
+              </span>
+            )}
           </Label>
           <select className={inputCls} value={category} onChange={(e) => setCategory(e.target.value as Category)}>
             {CATEGORIES.map((c) => (

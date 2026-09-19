@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale } from '@/components/LocaleProvider';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -94,6 +95,19 @@ export function ScanClient({
         </div>
         <LanguageSwitcher />
       </header>
+
+      {/* Scan / Add manually tabs */}
+      <div className="mb-4 grid grid-cols-2 gap-2">
+        <span className="rounded-md border border-brand bg-brand px-3 py-2 text-center text-sm font-semibold text-white">
+          {t('scan.tabScan')}
+        </span>
+        <Link
+          href="/manual"
+          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-center text-sm font-medium text-slate-700"
+        >
+          {t('scan.tabManual')}
+        </Link>
+      </div>
 
       {isDemo && (
         <div className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">

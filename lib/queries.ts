@@ -41,6 +41,18 @@ export async function getVendorMemory(
   };
 }
 
+/** All transactions in the business, newest first (for the "All time" view). */
+export async function getAllTransactions(supabase: SupabaseClient): Promise<TxnRow[]> {
+  const { data } = await supabase
+    .from('transactions')
+    .select(
+      'id, vendor, category, payment_method, direction, amount, original_amount, original_currency, occurred_on, notes, created_at'
+    )
+    .order('occurred_on', { ascending: false })
+    .order('created_at', { ascending: false });
+  return (data as TxnRow[]) ?? [];
+}
+
 /** Transactions whose occurred_on falls in [monthStart, nextMonthStart). */
 export async function getMonthTransactions(
   supabase: SupabaseClient,

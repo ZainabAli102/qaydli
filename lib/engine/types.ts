@@ -62,6 +62,8 @@ export interface ReceiptResult {
   paid_currency: Confident<Currency | null>;
   remaining: Confident<number | null>;
   payment_method: Confident<string | null>;
+  /** Model-suggested expense/income category slug (see the prompt's list). */
+  category: Confident<string | null>;
   language: Confident<string | null>;
   notes: Confident<string | null>;
   flags: Flag[];

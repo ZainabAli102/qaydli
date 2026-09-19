@@ -3,18 +3,30 @@
 
 export const CATEGORIES = [
   'supplies',
+  'furniture',
+  'equipment_assets',
+  'inventory',
   'rent',
   'salaries',
   'utilities',
+  'fuel',
   'transport',
+  'food_hospitality',
   'marketing',
-  'office_fitout',
+  'software_subscriptions',
+  'professional_services',
+  'bank_fees',
+  'taxes_gov_fees',
   'maintenance',
   'medical_personal',
-  'bank_fees',
   'other',
 ] as const;
 export type Category = (typeof CATEGORIES)[number];
+
+/** Runtime guard: is this string one of our categories? */
+export function isCategory(v: unknown): v is Category {
+  return typeof v === 'string' && (CATEGORIES as readonly string[]).includes(v);
+}
 
 export const PAYMENT_METHODS = ['cash', 'card', 'transfer', 'other'] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
@@ -32,15 +44,23 @@ export function directionToType(direction: 'in' | 'out'): TxnType {
 // Keyword → category hints (matched against vendor + notes, case-insensitive).
 // Vendor memory always wins over this; it is only a first guess for new vendors.
 const HINTS: Array<[RegExp, Category]> = [
-  [/pharmac|صيدلي|دهرمان|دارمان|medical|clinic|hospital/i, 'medical_personal'],
-  [/rent|ايجار|كرێ|كراء/i, 'rent'],
+  [/pharmac|صيدلي|دهرمان|دارمان|medical|clinic|hospital|مستشفى|نەخۆشخانە/i, 'medical_personal'],
   [/salar|راتب|مووچە|payroll|wage/i, 'salaries'],
-  [/electric|كهرب|كارەبا|water|ماء|gas|utility|فاتورة الكهرباء/i, 'utilities'],
-  [/taxi|transport|نقل|گواستنەوە|fuel|بنزين|وقود|delivery|توصيل/i, 'transport'],
-  [/market|اعلان|ڕیکلام|advert|print|طباعة|design/i, 'marketing'],
-  [/furnitur|اثاث|مۆبیلیا|curtain|ستائر|پەردە|home center|bellona|fit-?out|decor/i, 'office_fitout'],
-  [/maintenanc|صيانة|چاککردن|repair|تصليح/i, 'maintenance'],
-  [/bank|بنك|بانک|transfer fee|رسوم|commission|عمولة/i, 'bank_fees'],
+  [/\brent\b|ايجار|كرێ|كراء|إيجار/i, 'rent'],
+  [/fuel|بنزين|وقود|diesel|gasoline|سۆتەمەنی|گازۆیل|petrol/i, 'fuel'],
+  [/taxi|transport|نقل|گواستنەوە|delivery|توصيل|shipping|شحن|freight/i, 'transport'],
+  [/restaurant|مطعم|چێشتخانە|\bfood\b|طعام|خۆراک|cafe|قهوة|hotel|فندق|catering|ضيافة/i, 'food_hospitality'],
+  [/software|subscription|اشتراك|بەشداری|saas|hosting|domain|licen[cs]e|ترخيص|app store|figma|adobe/i, 'software_subscriptions'],
+  [/consult|lawyer|محامي|accountant|محاسب|legal|قانوني|engineer|مهندس|خدمات مهنية/i, 'professional_services'],
+  [/\btax\b|ضريبة|ضرائب|باج|government|حكومة|حکومەت|customs|جمرك|رسوم حكومية/i, 'taxes_gov_fees'],
+  [/bank|بنك|بانک|transfer fee|commission|عمولة|رسوم تحويل/i, 'bank_fees'],
+  [/electric|كهرب|كارەبا|water|ماء|ئاو|utility|فاتورة|internet|انترنت|ئینتەرنێت|generator|مولد/i, 'utilities'],
+  [/market|اعلان|إعلان|ڕیکلام|advert|print|طباعة|design|بازاڕ|billboard|social media/i, 'marketing'],
+  [/furnitur|اثاث|أثاث|مۆبیلیا|curtain|ستائر|پەردە|bellona|sofa|desk|chair|table|decor|ديكور/i, 'furniture'],
+  [/equipment|machine|جهاز|أجهزة|ئامێر|asset|tool|معدات|device/i, 'equipment_assets'],
+  [/inventory|stock|بضاعة|مخزون|کاڵا|goods|raw material|مواد خام/i, 'inventory'],
+  [/maintenanc|صيانة|چاککردنەوە|repair|تصليح|إصلاح/i, 'maintenance'],
+  [/supplies|مستلزمات|قرطاسية|stationery|پێداویستی/i, 'supplies'],
 ];
 
 /** A first-guess category for a new vendor from free text. Defaults to 'other'. */

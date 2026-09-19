@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLocale } from '@/components/LocaleProvider';
@@ -27,6 +28,7 @@ export function DashboardClient(props: {
   businessName: string;
   usdIqdRate: number;
   month: string;
+  allTime: boolean;
   prevMonth: string;
   nextMonth: string;
   moneyIn: number;
@@ -35,6 +37,7 @@ export function DashboardClient(props: {
   transactions: TxnRow[];
   entries: number;
   trialLimit: number;
+  savedMonth: string | null;
 }) {
   const { t, locale } = useLocale();
   const router = useRouter();
@@ -42,9 +45,33 @@ export function DashboardClient(props: {
   const profit = props.moneyIn - props.moneyOut;
   const maxCat = props.categories.reduce((m, c) => Math.max(m, c.amount), 0);
   const trialPct = Math.min(100, (props.entries / props.trialLimit) * 100);
+  const thisMonth = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  })();
+
+  // "Saved to <Month>" toast after a save; then clean the URL.
+  const [toast, setToast] = useState<string | null>(
+    props.savedMonth ? `${t('toast.savedTo')} ${monthLabel(props.savedMonth, locale)}` : null
+  );
+  useEffect(() => {
+    if (!props.savedMonth) return;
+    const timer = setTimeout(() => {
+      setToast(null);
+      router.replace(`/dashboard?m=${props.month}`);
+    }, 3500);
+    return () => clearTimeout(timer);
+  }, [props.savedMonth, props.month, router]);
 
   return (
     <div className="flex min-h-dvh flex-col">
+      {toast && (
+        <div className="fixed inset-x-0 top-3 z-20 mx-auto flex max-w-md justify-center px-4">
+          <div className="rounded-full bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-lg">
+            ✓ {toast}
+          </div>
+        </div>
+      )}
       <main className="mx-auto w-full max-w-md flex-1 px-4 py-5">
         <header className="mb-4 flex items-center justify-between">
           <div>
@@ -99,22 +126,37 @@ export function DashboardClient(props: {
         </div>
 
         {/* Month switcher */}
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-2 flex items-center justify-between">
           <button
             onClick={() => router.push(`/dashboard?m=${props.prevMonth}`)}
             aria-label={t('dash.prevMonth')}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-slate-600"
+            disabled={props.allTime}
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-slate-600 disabled:opacity-30"
           >
             ‹
           </button>
-          <span className="font-semibold text-slate-800">{monthLabel(props.month, locale)}</span>
+          <span className="font-semibold text-slate-800">
+            {props.allTime ? t('dash.allTime') : monthLabel(props.month, locale)}
+          </span>
           <button
             onClick={() => router.push(`/dashboard?m=${props.nextMonth}`)}
             aria-label={t('dash.nextMonth')}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-slate-600"
+            disabled={props.allTime}
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-slate-600 disabled:opacity-30"
           >
             ›
           </button>
+        </div>
+        <div className="mb-4 text-center">
+          {props.allTime ? (
+            <button onClick={() => router.push(`/dashboard?m=${thisMonth}`)} className="text-xs font-medium text-brand">
+              {monthLabel(thisMonth, locale)}
+            </button>
+          ) : (
+            <button onClick={() => router.push('/dashboard?m=all')} className="text-xs font-medium text-brand">
+              {t('dash.allTime')}
+            </button>
+          )}
         </div>
 
         {/* KPIs */}
@@ -179,12 +221,20 @@ export function DashboardClient(props: {
           )}
         </section>
 
-        <Link
-          href="/scan"
-          className="block rounded-lg bg-brand px-4 py-3 text-center text-base font-semibold text-white"
-        >
-          📷 {t('dash.newScan')}
-        </Link>
+        <div className="grid grid-cols-2 gap-3">
+          <Link
+            href="/scan"
+            className="rounded-lg bg-brand px-4 py-3 text-center text-base font-semibold text-white"
+          >
+            📷 {t('dash.newScan')}
+          </Link>
+          <Link
+            href="/manual"
+            className="rounded-lg border border-brand px-4 py-3 text-center text-base font-semibold text-brand"
+          >
+            ✏️ {t('dash.addManually')}
+          </Link>
+        </div>
       </main>
       <BottomNav />
     </div>

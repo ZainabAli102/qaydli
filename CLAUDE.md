@@ -97,7 +97,9 @@ is downstream, not the engine's job).
 (ISO, **parsed in code** from `date_raw` — see below), `currency`
 (IQD | USD | mixed), `line_items[]` (`description`, `qty`, `unit_price`,
 `line_total`), `subtotal`, `discount`, `total`, `paid_amount`, `paid_currency`,
-`remaining`, `payment_method`, `language`, `notes`, `flags[]`, and `model_used`
+`remaining`, `payment_method`, `category` (model-suggested expense/income
+category slug, chosen from the app's category list), `language`, `notes`,
+`flags[]`, and `model_used`
 (which model produced the result — engine-set, not from the model).
 
 **Dates are parsed in code** (`lib/engine/date.ts`), not trusted to the model:

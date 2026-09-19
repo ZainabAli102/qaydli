@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getSessionContext } from '@/lib/session';
 import { createClient } from '@/lib/supabase/server';
-import { getEntryCount, getMonthTransactions } from '@/lib/queries';
+import { getEntryCount, getMonthTransactions, getAllTransactions } from '@/lib/queries';
 import { DashboardClient } from '@/components/DashboardClient';
 import { FREE_TRIAL_LIMIT, type Category } from '@/lib/domain';
 
@@ -12,14 +12,15 @@ const pad = (n: number) => String(n).padStart(2, '0');
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ m?: string }>;
+  searchParams: Promise<{ m?: string; saved?: string }>;
 }) {
   const { user, business } = await getSessionContext();
   if (!user) redirect('/login');
   if (!business) redirect('/onboarding');
 
-  const { m } = await searchParams;
+  const { m, saved } = await searchParams;
   const now = new Date();
+  const allTime = m === 'all';
   const month = m && /^\d{4}-\d{2}$/.test(m) ? m : `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
   const [y, mo] = month.split('-').map(Number);
   const monthStart = `${month}-01`;
@@ -29,7 +30,7 @@ export default async function DashboardPage({
 
   const supabase = await createClient();
   const [txns, entries] = await Promise.all([
-    getMonthTransactions(supabase, monthStart, nextStart),
+    allTime ? getAllTransactions(supabase) : getMonthTransactions(supabase, monthStart, nextStart),
     getEntryCount(supabase),
   ]);
 
@@ -48,11 +49,14 @@ export default async function DashboardPage({
     .map(([category, amount]) => ({ category, amount }))
     .sort((a, b) => b.amount - a.amount);
 
+  const savedMonth = saved && /^\d{4}-\d{2}$/.test(saved) ? saved : null;
+
   return (
     <DashboardClient
       businessName={business.name}
       usdIqdRate={business.usd_iqd_rate}
-      month={month}
+      month={allTime ? 'all' : month}
+      allTime={allTime}
       prevMonth={prevMonth}
       nextMonth={nextMonth}
       moneyIn={moneyIn}
@@ -61,6 +65,7 @@ export default async function DashboardPage({
       transactions={txns}
       entries={entries}
       trialLimit={FREE_TRIAL_LIMIT}
+      savedMonth={savedMonth}
     />
   );
 }
