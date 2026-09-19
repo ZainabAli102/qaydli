@@ -11,6 +11,7 @@ export interface ClientRow {
   name: string;
   phone: string | null;
   email: string | null;
+  address: string | null;
   notes: string | null;
 }
 
@@ -57,7 +58,7 @@ export interface InvoiceDetail extends InvoiceListRow {
 export async function getClients(supabase: SupabaseClient): Promise<ClientRow[]> {
   const { data } = await supabase
     .from('clients')
-    .select('id, name, phone, email, notes')
+    .select('id, name, phone, email, address, notes')
     .order('name', { ascending: true });
   return (data as ClientRow[]) ?? [];
 }
@@ -128,7 +129,7 @@ export async function getInvoice(
   const { data } = await supabase
     .from('invoices')
     .select(
-      'id, number, currency, total, subtotal, discount, status, issue_date, due_date, sent_at, usd_iqd_rate, client_id, items, notes, public_token, pdf_path, document_id, created_at, clients(id, name, phone, email, notes)'
+      'id, number, currency, total, subtotal, discount, status, issue_date, due_date, sent_at, usd_iqd_rate, client_id, items, notes, public_token, pdf_path, document_id, created_at, clients(id, name, phone, email, address, notes)'
     )
     .eq('id', id)
     .maybeSingle();

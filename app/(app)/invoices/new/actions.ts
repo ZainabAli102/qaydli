@@ -10,7 +10,7 @@ import { computeTotals, type InvoiceCurrency, type InvoiceItem } from '@/lib/inv
 
 export interface CreateInvoiceInput {
   clientId: string | null;
-  newClient: { name: string; phone: string; email: string } | null;
+  newClient: { name: string; phone: string; email: string; address: string } | null;
   items: InvoiceItem[];
   currency: InvoiceCurrency;
   discount: number;
@@ -53,6 +53,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<CreateIn
         name: input.newClient.name.trim(),
         phone: input.newClient.phone.trim() || null,
         email: input.newClient.email.trim() || null,
+        address: input.newClient.address.trim() || null,
       })
       .select('id')
       .single();

@@ -18,9 +18,10 @@ import {
   StyleSheet,
   renderToBuffer,
 } from '@react-pdf/renderer';
-import { t, dir } from '@/lib/i18n';
+import { t, dir, interpolate } from '@/lib/i18n';
 import { formatMoney } from '@/lib/money';
 import { lineTotal, normalizeHex, DEFAULT_ACCENT } from '@/lib/invoices';
+import { formatDate, formatAmount, currencyLabel, altCurrency } from '@/lib/invoice-format';
 import type { InvoiceHtmlData } from '@/lib/invoice-html';
 
 // ---- fonts (registered once) ----------------------------------------------
@@ -77,78 +78,105 @@ function InvoiceDoc({ d }: { d: InvoiceHtmlData }) {
   const rtl = dir(d.locale) === 'rtl';
   const accent = normalizeHex(d.accent, DEFAULT_ACCENT);
   const tr = (k: string) => rtlText(t(d.locale, k));
-  const money = (n: number) => formatMoney(n, d.currency); // Latin digits, LTR
+  const cur = currencyLabel(d.currency);
+  const money = (n: number) => formatMoney(n, d.currency); // Western digits, LTR
+  const amt = (n: number) => formatAmount(n, d.currency);
   const balance = Math.max(0, d.total - d.paid);
-  const partiallyPaid = d.paid > 0 && balance > 0;
+  const hasPayment = d.paid > 0;
+  const equiv = altCurrency(d.total, d.currency, d.usdIqdRate ?? 0);
+  const statusColor = STATUS_COLOR[d.display] ?? '#64748b';
   const align = (rtl ? 'right' : 'left') as 'right' | 'left';
+  const numAlign = (rtl ? 'left' : 'right') as 'right' | 'left';
   const rowDir = (rtl ? 'row-reverse' : 'row') as 'row' | 'row-reverse';
 
   const s = StyleSheet.create({
     page: {
-      paddingVertical: 40,
-      paddingHorizontal: 36,
+      paddingVertical: 44,
+      paddingHorizontal: 40,
+      paddingBottom: 56,
       fontFamily: rtl ? 'Naskh' : 'Sans',
       fontSize: 10,
       color: '#0f172a',
     },
     top: { flexDirection: rowDir, justifyContent: 'space-between' },
-    brandRow: { flexDirection: rowDir, alignItems: 'center' },
-    logo: { height: 46, width: 46, objectFit: 'contain', marginHorizontal: 8 },
-    bizName: { fontSize: 16, fontWeight: 'bold', color: accent, textAlign: align },
+    brandRow: { flexDirection: rowDir },
+    logo: { height: 52, width: 52, maxWidth: 140, objectFit: 'contain', marginHorizontal: 10 },
+    bizName: { fontSize: 15, fontWeight: 'bold', color: accent, textAlign: align, marginBottom: 2 },
     muted: { color: '#64748b', fontSize: 9, textAlign: align },
     doc: { textAlign: rtl ? 'left' : 'right', maxWidth: 200 },
-    label: { fontSize: 8, color: '#94a3b8', fontWeight: 'bold' },
-    number: { fontSize: 18, fontWeight: 'bold' },
-    badge: {
-      marginTop: 4,
+    stamp: {
       alignSelf: rtl ? 'flex-start' : 'flex-end',
-      color: '#fff',
-      fontSize: 8,
+      borderWidth: 1.5,
+      borderColor: statusColor,
+      color: statusColor,
+      borderRadius: 5,
+      fontSize: 9,
       fontWeight: 'bold',
+      letterSpacing: 1,
+      textTransform: 'uppercase',
       paddingVertical: 2,
       paddingHorizontal: 8,
-      borderRadius: 8,
-      backgroundColor: STATUS_COLOR[d.display] ?? '#64748b',
     },
-    parties: { flexDirection: rowDir, justifyContent: 'space-between', marginTop: 22 },
+    invWord: { fontSize: 26, fontWeight: 'bold', letterSpacing: 1, marginTop: 8, textTransform: 'uppercase' },
+    invNo: { fontSize: 12, fontWeight: 'bold', color: accent, marginBottom: 6 },
+    docline: { fontSize: 10, color: '#334155' },
+    label: { fontSize: 9, color: '#94a3b8', fontWeight: 'bold', letterSpacing: 0.5, textAlign: align },
+    billto: { marginTop: 26, alignItems: rtl ? 'flex-end' : 'flex-start' },
+    clientName: { fontWeight: 'bold', fontSize: 12, textAlign: align, marginTop: 2 },
     th: {
       flexDirection: rowDir,
-      borderBottomWidth: 2,
-      borderBottomColor: accent,
-      paddingVertical: 6,
+      backgroundColor: accent,
+      paddingVertical: 7,
+      paddingHorizontal: 6,
     },
-    tr: { flexDirection: rowDir, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', paddingVertical: 6 },
-    cDesc: { flexGrow: 1, flexBasis: 0, textAlign: align, color: accent, fontWeight: 'bold' },
-    cDescRow: { flexGrow: 1, flexBasis: 0, textAlign: align, color: '#334155' },
-    cNum: { width: 70, textAlign: rtl ? 'left' : 'right' },
-    cNumH: { width: 70, textAlign: rtl ? 'left' : 'right', color: accent, fontWeight: 'bold', fontSize: 8 },
-    cQty: { width: 36, textAlign: rtl ? 'left' : 'right' },
-    cQtyH: { width: 36, textAlign: rtl ? 'left' : 'right', color: accent, fontWeight: 'bold', fontSize: 8 },
-    totals: { marginTop: 14, alignSelf: rtl ? 'flex-start' : 'flex-end', width: 240 },
+    tr: { flexDirection: rowDir, borderBottomWidth: 1, borderBottomColor: '#eef2f7', paddingVertical: 6, paddingHorizontal: 6 },
+    trAlt: { backgroundColor: '#f8fafc' },
+    hIdx: { width: 20, textAlign: 'center', color: '#fff', fontWeight: 'bold', fontSize: 8.5 },
+    hDesc: { flexGrow: 1, flexBasis: 0, textAlign: align, color: '#fff', fontWeight: 'bold', fontSize: 8.5 },
+    hQty: { width: 32, textAlign: numAlign, color: '#fff', fontWeight: 'bold', fontSize: 8.5 },
+    hNum: { width: 92, textAlign: numAlign, color: '#fff', fontWeight: 'bold', fontSize: 8.5 },
+    // The '(IQD)' tag is Latin — pin it to the Latin font so it renders
+    // regardless of the Arabic font's Latin coverage/subsetting.
+    curTag: { fontFamily: 'Sans' },
+    cIdx: { width: 20, textAlign: 'center', color: '#94a3b8' },
+    cDesc: { flexGrow: 1, flexBasis: 0, textAlign: align, color: '#334155' },
+    cQty: { width: 32, textAlign: numAlign },
+    cNum: { width: 92, textAlign: numAlign },
+    totals: { marginTop: 16, alignSelf: rtl ? 'flex-start' : 'flex-end', width: 260 },
     tline: { flexDirection: rowDir, justifyContent: 'space-between', paddingVertical: 3 },
+    tstrong: { borderTopWidth: 1, borderTopColor: '#e2e8f0', marginTop: 4, paddingTop: 7, fontWeight: 'bold' },
+    equiv: { textAlign: numAlign, color: '#94a3b8', fontSize: 9, paddingBottom: 2 },
     grand: {
       flexDirection: rowDir,
       justifyContent: 'space-between',
       alignItems: 'center',
       marginTop: 8,
-      paddingVertical: 8,
-      paddingHorizontal: 10,
+      paddingVertical: 9,
+      paddingHorizontal: 11,
       borderRadius: 6,
       backgroundColor: accent,
     },
     grandText: { color: '#fff', fontWeight: 'bold', fontSize: 13 },
-    balance: { color: '#dc2626', fontWeight: 'bold' },
     pay: {
       marginTop: 20,
-      padding: 10,
+      padding: 11,
       backgroundColor: '#f8fafc',
       borderRadius: 8,
       [rtl ? 'borderRightWidth' : 'borderLeftWidth']: 3,
       [rtl ? 'borderRightColor' : 'borderLeftColor']: accent,
     },
     notes: { marginTop: 14, color: '#475569', textAlign: align },
-    footNote: { marginTop: 22, textAlign: 'center', color: '#334155' },
-    foot: { marginTop: 10, textAlign: 'center', color: '#94a3b8', fontSize: 8 },
+    footer: {
+      position: 'absolute',
+      bottom: 28,
+      left: 40,
+      right: 40,
+      borderTopWidth: 2,
+      borderTopColor: accent,
+      paddingTop: 8,
+    },
+    footNote: { textAlign: 'center', color: '#334155', fontSize: 9 },
+    footPage: { textAlign: 'center', color: '#94a3b8', fontSize: 8, marginTop: 3 },
   });
 
   return (
@@ -162,9 +190,9 @@ function InvoiceDoc({ d }: { d: InvoiceHtmlData }) {
             {d.business.logoUrl ? <Image style={s.logo} src={d.business.logoUrl} /> : null}
             <View>
               <Text style={s.bizName}>{rtlText(d.business.name)}</Text>
+              {d.business.address ? <Text style={s.muted}>{rtlText(d.business.address)}</Text> : null}
               {d.business.phone ? <Text style={s.muted}>{d.business.phone}</Text> : null}
               {d.business.email ? <Text style={s.muted}>{d.business.email}</Text> : null}
-              {d.business.address ? <Text style={s.muted}>{rtlText(d.business.address)}</Text> : null}
               {d.business.taxNumber ? (
                 <Text style={s.muted}>
                   {tr('inv.taxNumber')}: {d.business.taxNumber}
@@ -173,48 +201,53 @@ function InvoiceDoc({ d }: { d: InvoiceHtmlData }) {
             </View>
           </View>
           <View style={s.doc}>
-            <Text style={s.label}>{tr('inv.invoiceNo')}</Text>
-            <Text style={s.number}>{d.number}</Text>
-            <Text style={s.badge}>{tr(`inv.status.${d.display}`)}</Text>
-          </View>
-        </View>
-
-        {/* Bill to + dates */}
-        <View style={s.parties}>
-          <View style={{ flexGrow: 1 }}>
-            <Text style={s.label}>{tr('inv.billTo')}</Text>
-            <Text style={{ fontWeight: 'bold', textAlign: align }}>{rtlText(d.client.name) || '—'}</Text>
-            {d.client.phone ? <Text style={s.muted}>{d.client.phone}</Text> : null}
-            {d.client.email ? <Text style={s.muted}>{d.client.email}</Text> : null}
-          </View>
-          <View style={{ textAlign: rtl ? 'left' : 'right' }}>
-            <Text>
+            <Text style={s.stamp}>{tr(`inv.status.${d.display}`)}</Text>
+            <Text style={s.invWord}>{tr('inv.invoiceNo')}</Text>
+            <Text style={s.invNo}>{d.number}</Text>
+            <Text style={s.docline}>
               <Text style={s.label}>{tr('inv.date')}: </Text>
-              {d.issueDate}
+              {formatDate(d.issueDate)}
             </Text>
             {d.dueDate ? (
-              <Text>
+              <Text style={s.docline}>
                 <Text style={s.label}>{tr('inv.due')}: </Text>
-                {d.dueDate}
+                {formatDate(d.dueDate)}
               </Text>
             ) : null}
           </View>
         </View>
 
+        {/* Bill to */}
+        <View style={s.billto}>
+          <Text style={s.label}>{tr('inv.billTo')}</Text>
+          <Text style={s.clientName}>{rtlText(d.client.name) || '—'}</Text>
+          {d.client.phone ? <Text style={s.muted}>{d.client.phone}</Text> : null}
+          {d.client.address ? <Text style={s.muted}>{rtlText(d.client.address)}</Text> : null}
+          {d.client.email ? <Text style={s.muted}>{d.client.email}</Text> : null}
+        </View>
+
         {/* Items */}
-        <View style={{ marginTop: 12 }}>
+        <View style={{ marginTop: 14 }}>
           <View style={s.th}>
-            <Text style={s.cDesc}>{tr('inv.itemDesc')}</Text>
-            <Text style={s.cQtyH}>{tr('inv.qty')}</Text>
-            <Text style={s.cNumH}>{tr('inv.unitPrice')}</Text>
-            <Text style={s.cNumH}>{tr('inv.lineTotal')}</Text>
+            <Text style={s.hIdx}>#</Text>
+            <Text style={s.hDesc}>{tr('inv.itemDesc')}</Text>
+            <Text style={s.hQty}>{tr('inv.qty')}</Text>
+            <Text style={s.hNum}>
+              <Text>{tr('inv.unitPrice')}</Text>
+              <Text style={s.curTag}> ({cur})</Text>
+            </Text>
+            <Text style={s.hNum}>
+              <Text>{tr('inv.lineTotal')}</Text>
+              <Text style={s.curTag}> ({cur})</Text>
+            </Text>
           </View>
           {d.items.map((it, i) => (
-            <View style={s.tr} key={i}>
-              <Text style={s.cDescRow}>{rtlText(it.description) || '—'}</Text>
+            <View style={i % 2 === 1 ? [s.tr, s.trAlt] : s.tr} key={i}>
+              <Text style={s.cIdx}>{i + 1}</Text>
+              <Text style={s.cDesc}>{rtlText(it.description) || '—'}</Text>
               <Text style={s.cQty}>{String(it.qty)}</Text>
-              <Text style={s.cNum}>{money(it.unit_price)}</Text>
-              <Text style={s.cNum}>{money(lineTotal(it))}</Text>
+              <Text style={s.cNum}>{amt(it.unit_price)}</Text>
+              <Text style={s.cNum}>{amt(lineTotal(it))}</Text>
             </View>
           ))}
         </View>
@@ -231,36 +264,53 @@ function InvoiceDoc({ d }: { d: InvoiceHtmlData }) {
               <Text>− {money(d.discount)}</Text>
             </View>
           ) : null}
-          <View style={s.grand}>
-            <Text style={s.grandText}>{tr('inv.total')}</Text>
-            <Text style={s.grandText}>{money(d.total)}</Text>
-          </View>
-          {partiallyPaid ? (
+
+          {hasPayment ? (
             <>
+              <View style={[s.tline, s.tstrong]}>
+                <Text>{tr('inv.total')}</Text>
+                <Text>{money(d.total)}</Text>
+              </View>
+              {equiv ? <Text style={s.equiv}>{equiv}</Text> : null}
               <View style={s.tline}>
-                <Text style={s.muted}>{tr('inv.paidSoFar')}</Text>
+                <Text style={s.muted}>{tr('inv.paidToDate')}</Text>
                 <Text>{money(d.paid)}</Text>
               </View>
-              <View style={s.tline}>
-                <Text style={s.balance}>{tr('inv.balanceDue')}</Text>
-                <Text style={s.balance}>{money(balance)}</Text>
+              <View style={s.grand}>
+                <Text style={s.grandText}>{tr('inv.balanceDue')}</Text>
+                <Text style={s.grandText}>{money(balance)}</Text>
               </View>
             </>
-          ) : null}
+          ) : (
+            <>
+              <View style={s.grand}>
+                <Text style={s.grandText}>{tr('inv.total')}</Text>
+                <Text style={s.grandText}>{money(d.total)}</Text>
+              </View>
+              {equiv ? <Text style={s.equiv}>{equiv}</Text> : null}
+            </>
+          )}
         </View>
 
         {d.notes ? <Text style={s.notes}>{rtlText(d.notes)}</Text> : null}
         {d.business.paymentInstructions ? (
           <View style={s.pay}>
             <Text style={s.label}>{tr('inv.paymentInstructions')}</Text>
-            <Text style={{ textAlign: align }}>{rtlText(d.business.paymentInstructions)}</Text>
+            <Text style={{ textAlign: align, marginTop: 3 }}>{rtlText(d.business.paymentInstructions)}</Text>
           </View>
         ) : null}
 
-        {d.business.footer ? <Text style={s.footNote}>{rtlText(d.business.footer)}</Text> : null}
-        <Text style={s.foot}>
-          {tr('inv.publicIntro')} {rtlText(d.business.name)}
-        </Text>
+        {/* Footer (fixed to the page bottom): note + Page X of N + accent line */}
+        <View style={s.footer} fixed>
+          {d.business.footer ? <Text style={s.footNote}>{rtlText(d.business.footer)}</Text> : null}
+          <Text
+            style={s.footPage}
+            render={({ pageNumber, totalPages }) =>
+              interpolate(t(d.locale, 'inv.pageOf'), { n: String(pageNumber), total: String(totalPages) })
+            }
+            fixed
+          />
+        </View>
       </Page>
     </Document>
   );

@@ -59,6 +59,7 @@ export async function GET(
       paid: invoice.paid,
       notes: invoice.notes,
       accent: biz?.accent_color ?? null,
+      usdIqdRate: invoice.usd_iqd_rate,
       business: {
         name: biz?.name ?? business.name,
         phone: biz?.phone ?? null,
@@ -72,6 +73,7 @@ export async function GET(
       client: {
         name: invoice.client?.name ?? invoice.client_name,
         phone: invoice.client?.phone ?? null,
+        address: invoice.client?.address ?? null,
         email: invoice.client?.email ?? null,
       },
     });

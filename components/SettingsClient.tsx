@@ -62,6 +62,7 @@ export function SettingsClient(props: {
       paid: 0,
       notes: null,
       accent,
+      usdIqdRate: Number(usdRate) || props.usdRate,
       business: {
         name: props.name,
         phone,
@@ -72,9 +73,9 @@ export function SettingsClient(props: {
         footer,
         logoUrl,
       },
-      client: { name: t('inv.client'), phone: null, email: null },
+      client: { name: t('inv.client'), phone: null, address: null, email: null },
     });
-  }, [locale, accent, props.name, phone, address, email, taxNumber, pay, footer, logoUrl, t]);
+  }, [locale, accent, props.name, phone, address, email, taxNumber, pay, footer, logoUrl, usdRate, props.usdRate, t]);
 
   async function save() {
     setBusy('save');

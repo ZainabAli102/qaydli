@@ -39,6 +39,7 @@ export function InvoiceForm(props: {
   const [newName, setNewName] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newEmail, setNewEmail] = useState('');
+  const [newAddress, setNewAddress] = useState('');
 
   // items + money
   const [items, setItems] = useState<ItemRow[]>([emptyItem()]);
@@ -166,7 +167,7 @@ export function InvoiceForm(props: {
 
     const input: CreateInvoiceInput = {
       clientId: adding ? null : clientId || null,
-      newClient: adding ? { name: newName, phone: newPhone, email: newEmail } : null,
+      newClient: adding ? { name: newName, phone: newPhone, email: newEmail, address: newAddress } : null,
       items: cleanItems,
       currency,
       discount: Number(discount) || 0,
@@ -298,6 +299,12 @@ export function InvoiceForm(props: {
                   className="w-full rounded-md border border-slate-300 px-3 py-2 text-base focus:border-brand focus:outline-none"
                 />
               </div>
+              <input
+                value={newAddress}
+                onChange={(e) => setNewAddress(e.target.value)}
+                placeholder={t('inv.clientAddress')}
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-base focus:border-brand focus:outline-none"
+              />
             </div>
           ) : (
             <select

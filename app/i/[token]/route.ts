@@ -23,7 +23,7 @@ export async function GET(
   const { data: inv } = await supabase
     .from('invoices')
     .select(
-      'id, business_id, number, currency, issue_date, due_date, status, items, subtotal, discount, total, notes, client_id, businesses(name, phone, address, email, tax_number, accent_color, invoice_footer, logo_path, payment_instructions), clients(name, phone, email)'
+      'id, business_id, number, currency, issue_date, due_date, status, items, subtotal, discount, total, usd_iqd_rate, notes, client_id, businesses(name, phone, address, email, tax_number, accent_color, invoice_footer, logo_path, payment_instructions), clients(name, phone, email, address)'
     )
     .eq('public_token', token)
     .maybeSingle();
@@ -52,7 +52,7 @@ export async function GET(
       }
     | null;
   const client = (Array.isArray(inv.clients) ? inv.clients[0] : inv.clients) as
-    | { name: string | null; phone: string | null; email: string | null }
+    | { name: string | null; phone: string | null; email: string | null; address: string | null }
     | null;
 
   let logoUrl: string | null = null;
@@ -77,6 +77,7 @@ export async function GET(
     paid,
     notes: inv.notes,
     accent: biz?.accent_color ?? null,
+    usdIqdRate: Number(inv.usd_iqd_rate) || 0,
     business: {
       name: biz?.name ?? '',
       phone: biz?.phone ?? null,
@@ -90,6 +91,7 @@ export async function GET(
     client: {
       name: client?.name ?? null,
       phone: client?.phone ?? null,
+      address: client?.address ?? null,
       email: client?.email ?? null,
     },
   });
